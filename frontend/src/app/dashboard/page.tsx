@@ -27,52 +27,35 @@ export default function Dashboard() {
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient()
-      const { data } = await supabase.auth.getSession()
-      const accessToken = data.session?.access_token
-
-      if (!data.session) {
+      const token = localStorage.getItem('token')
+      const userStr = localStorage.getItem('user')
+      
+      if (!token || !userStr) {
         setSignedIn(false)
         return
       }
 
-      if (accessToken) {
-        localStorage.setItem('token', accessToken)
-      }
-
-      setSignedIn(true)
-      const uid = data.session.user.id
-      setUserId(uid)
-
-      // Get user role from metadata
-      const sessionUserRole = data.session.user.app_metadata?.role ||
-                             data.session.user.user_metadata?.role || 'user'
-      setUserRole(sessionUserRole)
-
-      // Auto-register user if not exists
       try {
-        await api.get('/users/me/profile')
-      } catch {
-        await api.post('/users/register', {
-          email: data.session.user.email || `${uid}@consentire.local`,
-          publicKey: `supabase:${uid}`,
-          role: sessionUserRole
-        })
+        const user = JSON.parse(userStr)
+        setSignedIn(true)
+        setUserId(user.id)
+        setUserRole(user.role || 'user')
+        
+        await loadConsents()
+      } catch (error) {
+        console.error('Failed to load user data:', error)
+        setSignedIn(false)
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
       }
-
-      await loadConsents()
     }
     init()
   }, [])
 
-  const supabaseSignIn = async () => {
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`
-      }
-    })
+  const handleSignOut = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
   }
 
   const handleEmailSignIn = () => {
@@ -149,11 +132,7 @@ export default function Dashboard() {
               )}
               {signedIn && (
                 <button
-                  onClick={async () => {
-                    const supabase = createClient()
-                    await supabase.auth.signOut()
-                    window.location.reload()
-                  }}
+                  onClick={handleSignOut}
                   className="text-sm text-gray-500 hover:text-gray-700"
                 >
                   Sign out
@@ -172,10 +151,7 @@ export default function Dashboard() {
             <p className="text-gray-700 mb-6">Sign in to manage your GDPR consents with zero-knowledge privacy.</p>
             <div className="space-y-3">
               <button onClick={handleEmailSignIn} className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
-                Sign in with Email
-              </button>
-              <button onClick={supabaseSignIn} className="w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-                Sign in with GitHub
+                Sign in to Continue
               </button>
             </div>
             <p className="text-sm text-gray-500 mt-4">
