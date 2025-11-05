@@ -62,7 +62,7 @@ The backend follows a layered architecture:
 **Schema Design**:
 - `users`: User profiles with DID (Decentralized Identifiers) and public keys
 - `auth_credentials`: Email/password authentication with bcrypt hashing
-- `consent_records`: Immutable consent ledger with HGTP transaction hashes
+- `consents`: Immutable consent ledger with HGTP transaction hashes
 - `controllers`: Organization registry for data processors
 - `governance_proposals`: El Paca token-based voting system
 - `audit_logs`: Complete consent lifecycle event tracking
@@ -99,39 +99,51 @@ The backend follows a layered architecture:
 **Zero-Knowledge Proofs**:
 - **Circuit Design**: Circom circuits verify consent without exposing user identity
 - **Proof System**: Groth16 via snarkJS for compact proofs
-- **Implementation Status**: Enhanced simulation mode (full circuit compilation requires circom toolchain)
+- **Implementation Status**: Placeholder mode for development (full circuit compilation requires circom toolchain)
 - **Service**: `realZKService.ts` generates Groth16-compatible proof structures
 - **Verification**: Placeholder verification key for development/demo purposes
 - **Production Path**: Compile with `circom consent.circom --r1cs --wasm --sym` + snarkjs trusted setup
+
+**Cryptographic Dependencies** (November 2025):
+- **@noble/ed25519**: Ed25519 signatures for Constellation transactions (with SHA-512 polyfill via @noble/hashes)
+- **@noble/secp256k1**: ECDSA signatures for blockchain compatibility
+- **@noble/hashes**: SHA-512 implementation for Node.js environments (required by @noble/ed25519 v2.x)
 
 **Rationale**: Ed25519 provides 128-bit security with smaller signatures than RSA. secp256k1 ensures compatibility with Constellation's blockchain layer.
 
 ### Blockchain Integration (Constellation HGTP)
 
-**Service Status**: `realHGTPService.ts` - Production-ready with enhanced simulation mode
+**Service Status**: `realHGTPService.ts` - **FULL PRODUCTION MODE** with Constellation Mainnet
 
 **Implementation**:
-- **Anchoring**: All consent records generate deterministic HGTP transaction hashes
-- **Merkle Proofs**: 16-level merkle tree simulation for audit trail verification
-- **WebSocket**: Ready for real-time Constellation network updates
-- **Fallback**: Enhanced simulation provides realistic transaction hashes, block heights, and timestamps
+- **Anchoring**: All consent records submit real signed transactions to Constellation Mainnet DAG
+- **Merkle Proofs**: 16-level merkle tree verification for audit trail compliance
+- **WebSocket**: Optional real-time updates (L0 node metadata streaming)
+- **No Fallback**: System enforces mainnet connection - throws errors if credentials missing or connection fails
 
-**Network Configuration** (Environment Variables):
-- `CONSTELLATION_NODE_URL`: Defaults to localhost:9200 (integrationnet)
-- `CONSTELLATION_NETWORK_ID`: Defaults to 'integrationnet'
-- `CONSTELLATION_WALLET_ADDRESS`: Optional (simulation if not provided)
-- `CONSTELLATION_PRIVATE_KEY`: Optional (unsigned transactions in simulation)
-- `CONSTELLATION_PUBLIC_KEY`: Optional
+**Network Configuration** (Environment Variables - Required for Production):
+- `CONSTELLATION_NODE_URL`: `https://l0-lb-mainnet.constellationnetwork.io` (L0 metadata endpoint)
+- `CONSTELLATION_L1_URL`: `https://l1-lb-mainnet.constellationnetwork.io` (L1 DAG transactions)
+- `CONSTELLATION_NETWORK_ID`: `1` (mainnet)
+- `CONSTELLATION_WALLET_ADDRESS`: **Required** (stored in Replit Secrets)
+- `CONSTELLATION_PRIVATE_KEY`: **Required** (stored in Replit Secrets - Ed25519 signing key)
+- `CONSTELLATION_PUBLIC_KEY`: **Required** (stored in Replit Secrets)
 
-**Current Mode**: Enhanced simulation (perfect for demo/hackathon)
-**Production Mode**: Connect to Constellation mainnet by setting environment variables
+**Current Mode**: ✅ **PRODUCTION MAINNET** (no simulation capability)
+**Security**: All credentials stored in encrypted Replit Secrets, never exposed in code or logs
 
 **Transaction Lifecycle**:
-1. Consent granted → HGTP transaction created
-2. Transaction signed with Ed25519 or secp256k1
-3. Submitted to Constellation DAG (or simulated)
-4. Transaction hash stored in PostgreSQL `consent_records.hgtp_tx_hash`
-5. UI displays blockchain explorer link with transaction details
+1. Consent granted → HGTP transaction created with Ed25519 signature
+2. Transaction validated and signed (enforced - no unsigned transactions allowed)
+3. Submitted to Constellation L1 DAG endpoint (`/transactions`)
+4. Real transaction hash stored in PostgreSQL `consents.hgtp_tx_hash`
+5. UI displays blockchain explorer link: `https://explorer.constellationnetwork.io/transaction/{hash}`
+
+**Production Safeguards** (November 2025):
+- **Mandatory Credentials**: Service throws error on startup if keys missing
+- **Connection Validation**: L0 node health check required before accepting transactions
+- **Signed Transactions Only**: Unsigned transaction fallback removed - all TX must be signed
+- **L1 DAG Submission**: Direct submission to mainnet DAG via L1 load balancer
 
 ### State Management
 
@@ -162,17 +174,18 @@ PENDING → GRANTED → [ACTIVE | REVOKED | EXPIRED]
 - **Fallback**: Application gracefully handles Supabase unavailability by rejecting auth requests
 
 **Constellation Network** (HGTP)
-- **Purpose**: Immutable consent record anchoring
-- **Status**: Service layer prepared (`realHGTPService.ts`) for mainnet integration
-- **Current Mode**: Simulated HGTP transactions for development
-- **Integration Point**: `hgtpService.anchorConsent()` method
+- **Purpose**: Immutable consent record anchoring to Mainnet DAG
+- **Status**: **PRODUCTION MODE** - `realHGTPService.ts` connected to Constellation Mainnet
+- **Current Mode**: ✅ **Live Mainnet Transactions** - All consents anchor to L1 DAG  
+- **Integration Point**: `hgtpService.anchorConsent()` submits signed transactions to mainnet
 
 ### Core Libraries
 
 **Cryptography**:
-- `@noble/ed25519`: EdDSA signatures
-- `@noble/secp256k1`: ECDSA signatures
-- `bcryptjs`: Password hashing
+- `@noble/ed25519`: EdDSA signatures for Constellation transactions
+- `@noble/secp256k1`: ECDSA signatures for blockchain compatibility
+- `@noble/hashes`: SHA-512 polyfill for @noble/ed25519 (Node.js requirement)
+- `bcryptjs`: Password hashing (10 salt rounds)
 - `snarkjs`: Zero-knowledge proof generation
 - `circomlib`: Circom circuit utilities
 
@@ -219,8 +232,8 @@ PENDING → GRANTED → [ACTIVE | REVOKED | EXPIRED]
 **Tables**: 8 core tables with 20+ indexes for query optimization
 
 **Critical Indexes**:
-- `consent_records(user_id, status)`: Fast consent lookups
-- `consent_records(controller_id, status)`: Organization queries
+- `consents(user_id, status)`: Fast consent lookups
+- `consents(controller_hash, status)`: Organization queries by controller hash
 - `audit_logs(consent_id, created_at DESC)`: Chronological audit trails
 
 **Constraints**:

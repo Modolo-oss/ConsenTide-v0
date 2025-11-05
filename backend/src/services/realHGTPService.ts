@@ -306,25 +306,21 @@ class RealHGTPService {
   }
 
   /**
-   * Get merkle proof for consent
+   * Get merkle proof for consent (PRODUCTION MODE)
    */
   async getMerkleProof(consentId: string): Promise<MerkleProof> {
+    if (!this.isConnected) {
+      throw new Error('Not connected to Constellation Mainnet - cannot retrieve merkle proof');
+    }
+
     try {
-      if (this.isConnected) {
-        try {
-          const response = await this.httpClient.get(`/merkle-proof/${consentId}`);
-          return response.data;
-        } catch (error) {
-          logger.warn('Failed to get real merkle proof, using simulation', { error });
-        }
-      }
-
-      // Generate enhanced simulated merkle proof
-      const proof = await this.generateEnhancedMerkleProof(consentId);
-      return proof;
-
+      const response = await this.httpClient.get(`/merkle-proof/${consentId}`);
+      return response.data;
     } catch (error) {
-      logger.error('Failed to get merkle proof', { error });
+      logger.error('Failed to get merkle proof from Constellation Mainnet', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        consentId
+      });
       throw error;
     }
   }
@@ -429,54 +425,10 @@ class RealHGTPService {
   }
 
   /**
-   * Create enhanced simulated result
+   * REMOVED: Simulation fallback methods (createEnhancedSimulatedResult, generateEnhancedMerkleProof)
+   * Production mode enforces real Constellation Mainnet interactions only
+   * All simulation code removed to prevent silent fallbacks to fake data
    */
-  private async createEnhancedSimulatedResult(transaction: HGTPTransaction): Promise<HGTPResult> {
-    // Create deterministic but realistic transaction hash
-    const transactionString = JSON.stringify(transaction);
-    const transactionHash = cryptoService.hash(transactionString);
-    
-    // Simulate realistic block height
-    const baseHeight = 1000000; // Realistic starting height
-    const randomOffset = Math.floor(Math.random() * 1000);
-    const blockHeight = baseHeight + randomOffset;
-
-    // Create merkle root
-    const merkleRoot = cryptoService.hash(transactionHash + blockHeight.toString());
-
-    return {
-      transactionHash,
-      blockHeight,
-      merkleRoot,
-      anchoringTimestamp: Date.now()
-    };
-  }
-
-  /**
-   * Generate enhanced merkle proof
-   */
-  private async generateEnhancedMerkleProof(consentId: string): Promise<MerkleProof> {
-    // Generate deterministic merkle path
-    const leafHash = cryptoService.hash(consentId);
-    const path: string[] = [];
-    
-    // Simulate realistic merkle tree depth (e.g., 16 levels)
-    let currentHash = leafHash;
-    for (let i = 0; i < 16; i++) {
-      const siblingHash = cryptoService.hash(currentHash + i.toString());
-      path.push(siblingHash);
-      currentHash = cryptoService.hash(currentHash + siblingHash);
-    }
-
-    const root = currentHash;
-
-    return {
-      root,
-      path,
-      leaf: leafHash,
-      verified: true
-    };
-  }
 
   /**
    * Calculate transaction fee
