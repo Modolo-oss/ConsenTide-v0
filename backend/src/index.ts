@@ -33,12 +33,28 @@ const allowedOrigins = [
   process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
 ].filter(Boolean);
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.some(allowed => origin.includes(allowed as string))) {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    const isAllowed = allowedOrigins.some(allowed => origin.includes(allowed as string));
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else if (isDevelopment) {
+      // In development, allow all origins but log warning
+      logger.warn(`CORS: Allowing non-whitelisted origin in development: ${origin}`);
       callback(null, true);
     } else {
-      callback(null, true); // Allow all origins in development
+      // In production, reject non-whitelisted origins
+      logger.error(`CORS: Blocked request from unauthorized origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
