@@ -13,6 +13,17 @@ The application provides three core interfaces:
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (November 2025)
+
+- **✅ COMPLETE SUPABASE REMOVAL** - Fully migrated to native PostgreSQL
+  - Created pgConsentService, pgControllerService, pgGovernanceService (direct pg.Pool queries)
+  - Removed all @supabase packages from dependencies
+  - Deleted Supabase service files (supabaseConsentService.ts, etc.) and config/supabase.ts
+  - Updated all routes to use new native PG services
+- **✅ Docker Cleanup** - Removed all Docker files (Dockerfile.*, docker/, certificate scripts)
+- **✅ SQL Bug Fix** - Fixed aggregate nesting error in governance vote participation calculation
+- **✅ Constellation Mainnet** - Production HGTP integration (L0/L1 endpoints, signed TX only)
+
 ## System Architecture
 
 ### Frontend Architecture (Next.js 14)
@@ -24,8 +35,8 @@ The frontend uses Next.js App Router for modern React patterns with file-based r
 - **Standalone Output**: Configured for containerized deployment on Railway/Docker
 - **Static Optimization**: Images are unoptimized for Railway deployment constraints
 - **Security Headers**: Custom headers for XSS protection, frame denial, and content-type enforcement
-- **Authentication Context**: React Context API manages Supabase auth state globally
-- **API Client Layer**: Axios interceptors automatically inject JWT tokens from Supabase sessions
+- **Authentication Context**: React Context API manages auth state globally
+- **API Client Layer**: Axios interceptors automatically inject JWT tokens from sessions
 
 **Why Next.js over SPA**: SSR improves SEO and initial load performance while maintaining dynamic client interactions needed for real-time consent updates.
 
@@ -57,7 +68,7 @@ The backend follows a layered architecture:
 
 ### Data Storage Solutions
 
-**Primary Database**: PostgreSQL (Railway-hosted)
+**Primary Database**: PostgreSQL (Replit-hosted, native pg client)
 
 **Schema Design**:
 - `users`: User profiles with DID (Decentralized Identifiers) and public keys
@@ -73,12 +84,12 @@ The backend follows a layered architecture:
 
 ### Authentication & Authorization
 
-**Mechanism**: JWT-based authentication with Supabase Auth
+**Mechanism**: JWT-based authentication with native PostgreSQL
 
 **Implementation**:
-- Supabase handles user registration, login, and session management
-- JWT tokens are issued by Supabase and validated in backend middleware
-- Role-based access control (RBAC) uses `role` field in user metadata
+- Native PostgreSQL handles user registration, login via auth_credentials table
+- JWT tokens are issued by backend and validated in middleware
+- Role-based access control (RBAC) uses `role` field in users table
 - Frontend stores tokens in localStorage with automatic refresh
 
 **Security Measures**:
@@ -88,7 +99,7 @@ The backend follows a layered architecture:
 - Helmet.js security headers
 - Rate limiting on authentication endpoints
 
-**Why Supabase over Custom Auth**: Reduces security vulnerabilities, provides OAuth integrations, and eliminates need for password reset infrastructure.
+**Why Native Auth**: Full control over authentication flow, no external dependencies, better suited for Replit deployment.
 
 ### Cryptographic Services
 
@@ -167,11 +178,11 @@ PENDING → GRANTED → [ACTIVE | REVOKED | EXPIRED]
 
 ### Third-Party Services
 
-**Supabase** (Authentication & Database)
-- **Purpose**: PostgreSQL hosting and user authentication
-- **Integration**: `@supabase/supabase-js` client library
-- **Environment Variables**: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- **Fallback**: Application gracefully handles Supabase unavailability by rejecting auth requests
+**Replit PostgreSQL** (Native Database)
+- **Purpose**: PostgreSQL hosting via Replit infrastructure
+- **Integration**: Native `pg` library with Pool connection
+- **Environment Variables**: `DATABASE_URL` (auto-configured by Replit)
+- **Implementation**: Direct SQL queries, no external SDKs
 
 **Constellation Network** (HGTP)
 - **Purpose**: Immutable consent record anchoring to Mainnet DAG
@@ -208,8 +219,7 @@ PENDING → GRANTED → [ACTIVE | REVOKED | EXPIRED]
 - `@consentire/shared`: Monorepo shared types
 
 **Database**:
-- `pg`: PostgreSQL client
-- `@supabase/supabase-js`: Supabase SDK
+- `pg`: PostgreSQL client (native Pool connections)
 
 **Utilities**:
 - `winston`: Structured logging
@@ -241,4 +251,4 @@ PENDING → GRANTED → [ACTIVE | REVOKED | EXPIRED]
 - Unique constraints prevent duplicate consent records
 - Check constraints validate enum values (status, role)
 
-**Row-Level Security**: Prepared for Supabase RLS policies to enforce data isolation between users.
+**Access Control**: Server-side validation in middleware enforces data isolation between users and organizations.
