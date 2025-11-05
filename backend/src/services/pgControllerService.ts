@@ -10,7 +10,7 @@ import { generateControllerHash } from '../utils/crypto';
 import { logger } from '../utils/logger';
 import { Pool } from 'pg';
 
-class SupabaseControllerService {
+class PgControllerService {
   private pool: Pool;
 
   constructor() {
@@ -142,5 +142,5 @@ class SupabaseControllerService {
   }
 }
 
-export const supabaseControllerService = new SupabaseControllerService();
+export const pgControllerService = new PgControllerService();
 

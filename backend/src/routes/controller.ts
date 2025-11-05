@@ -9,7 +9,7 @@ import {
   APIError
 } from '@consentire/shared';
 import { authenticateUser, requireAdmin } from '../middleware/supabaseAuth';
-import { supabaseControllerService } from '../services/supabaseControllerService';
+import { pgControllerService } from '../services/pgControllerService';
 import { logger } from '../utils/logger';
 
 export const controllerRouter = Router();
@@ -33,7 +33,7 @@ controllerRouter.post('/register', authenticateUser, requireAdmin, async (req: R
       } as APIError);
     }
 
-    const response = await supabaseControllerService.registerController(request, req.user!.id);
+    const response = await pgControllerService.registerController(request, req.user!.id);
     res.status(201).json(response);
   } catch (error: any) {
     logger.error('Error registering controller', { error: error.message });
@@ -55,7 +55,7 @@ controllerRouter.post('/register', authenticateUser, requireAdmin, async (req: R
  */
 controllerRouter.get('/all', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const controllers = await supabaseControllerService.getAllControllers();
+    const controllers = await pgControllerService.getAllControllers();
     res.json({ controllers });
   } catch (error: any) {
     logger.error('Error listing controllers', { error: error.message });
@@ -73,7 +73,7 @@ controllerRouter.get('/all', authenticateUser, async (req: Request, res: Respons
  */
 controllerRouter.get('/stats', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const stats = await supabaseControllerService.getControllerStats();
+    const stats = await pgControllerService.getControllerStats();
     res.json(stats);
   } catch (error: any) {
     logger.error('Error getting controller stats', { error: error.message });
@@ -88,7 +88,7 @@ controllerRouter.get('/stats', authenticateUser, async (req: Request, res: Respo
 controllerRouter.get('/:controllerId', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { controllerId } = req.params;
-    const data = await supabaseControllerService.getController(controllerId);
+    const data = await pgControllerService.getController(controllerId);
     res.json({
       controllerId: data.id,
       controllerHash: data.controller_hash,

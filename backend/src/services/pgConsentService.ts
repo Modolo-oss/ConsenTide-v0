@@ -49,7 +49,7 @@ interface AuditLogRecord {
   timestamp?: string;
 }
 
-class SupabaseConsentService {
+class PgConsentService {
   
   /**
    * Grant consent with PostgreSQL persistence
@@ -547,4 +547,4 @@ class SupabaseConsentService {
   }
 }
 
-export const supabaseConsentService = new SupabaseConsentService();
+export const pgConsentService = new PgConsentService();

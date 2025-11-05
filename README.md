@@ -34,8 +34,8 @@ ConsenTide is a privacy-first consent ledger that lets users grant, monitor, and
 - ✅ **Regulatory Compliance Dashboard** – Real-time GDPR Article 7 & 13 compliance status
 - ✅ **Immutable Audit Trail** – Every consent action hash-anchored to HGTP
 - ✅ **Token-Governed Privacy** – El Paca used for community voting on privacy policies
-- ✅ **Production Database** – Replit PostgreSQL via Supabase client
-- ✅ **Authentication** – Email/password + JWT tokens (Supabase Auth integration)
+- ✅ **Production Database** – Native Replit PostgreSQL with pg client
+- ✅ **Authentication** – Email/password + JWT tokens (native implementation)
 - ✅ **GDPR Compliant Schema** – Complete database schema with proper indexing
 - ✅ **Constellation Mainnet Integration** – Live HGTP anchoring to L1 DAG (Network ID: 1)
 - 🚧 **Zero-Knowledge Proofs** – Placeholder implementation (full circuits pending)
@@ -109,11 +109,11 @@ See `.env.example` for required environment variables. Critical credentials (Con
 
 ## 🗄️ Database Setup
 
-### Replit PostgreSQL (via Supabase Client)
+### Replit PostgreSQL (Native)
 1. **Database automatically provisioned** by Replit
 2. **Environment variables auto-configured** (DATABASE_URL, PGHOST, PGPORT, PGUSER, PGPASSWORD)
-3. **Schema**: Legacy SQL schema in `database/schema.sql`
-4. **Data Access**: Supabase client services (supabaseConsentService, supabaseControllerService)
+3. **Schema**: SQL schema in `database/schema.sql`
+4. **Data Access**: Native PostgreSQL services using `pg` library
 5. **Production-ready** with automatic backups
 
 ### Manual Schema Setup
@@ -125,10 +125,10 @@ PGPASSWORD=$PGPASSWORD psql -h $PGHOST -U $PGUSER -p $PGPORT -d $PGDATABASE -f d
 ## 🔐 Authentication
 
 ### Supported Methods
-- **Email/Password**: Via Supabase Auth with bcrypt hashing
-- **JWT Tokens**: Supabase-issued tokens (24-hour expiration)
+- **Email/Password**: Native authentication with bcrypt hashing (10 salt rounds)
+- **JWT Tokens**: Server-issued tokens with configurable expiration (24-hour default)
 - **Role-Based Access Control**: User, Controller, Admin, Regulator roles
-- **Optional OAuth**: GitHub, Google (if Supabase configured)
+- **Session Management**: Stateless JWT authentication
 
 ### Demo Accounts
 - **Admin**: `admin@consentire.io` / `admin123`
@@ -143,11 +143,12 @@ See [docs/API.md](./docs/API.md) for full API documentation.
 ## 🏆 Current Status
 
 ### ✅ Production Ready (Deployed on Replit)
-- **Database Integration**: Replit PostgreSQL accessed via Supabase client
-  - Legacy SQL schema in `database/schema.sql`
-  - Supabase services layer for data access
-- **Authentication System**: Supabase Auth + JWT tokens with bcrypt password hashing
-  - Email/password authentication
+- **Database Integration**: Native Replit PostgreSQL with direct pg client
+  - SQL schema in `database/schema.sql`
+  - Native PostgreSQL services (pgConsentService, pgControllerService, pgGovernanceService)
+  - No external dependencies - pure PostgreSQL queries
+- **Authentication System**: JWT-based authentication with bcrypt password hashing
+  - Email/password authentication  
   - Role-based access control (User, Controller, Admin, Regulator)
 - **User Interface**: Complete dashboard and admin console (Next.js 14)
 - **API Gateway**: RESTful endpoints for all operations (Express + TypeScript)

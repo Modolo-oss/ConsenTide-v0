@@ -9,7 +9,7 @@ import {
   ConsentRevokeRequest,
   APIError
 } from '@consentire/shared';
-import { supabaseConsentService } from '../services/supabaseConsentService';
+import { pgConsentService } from '../services/pgConsentService';
 import { authenticateUser, optionalAuth } from '../middleware/supabaseAuth';
 import { logger } from '../utils/logger';
 
@@ -33,7 +33,7 @@ consentRouter.post('/grant', authenticateUser, async (req: Request, res: Respons
       } as APIError);
     }
 
-    const result = await supabaseConsentService.grantConsent(request, userId);
+    const result = await pgConsentService.grantConsent(request, userId);
     res.status(201).json(result);
   } catch (error: any) {
     logger.error('Error granting consent', { error: error.message });
@@ -59,7 +59,7 @@ consentRouter.get('/verify/:userId/:controllerId/:purpose', async (req: Request,
       purpose: decodeURIComponent(purpose)
     };
 
-    const result = await supabaseConsentService.verifyConsent(request);
+    const result = await pgConsentService.verifyConsent(request);
     
     if (!result.isValid) {
       return res.status(404).json(result);
@@ -100,7 +100,7 @@ consentRouter.post('/revoke/:consentId', authenticateUser, async (req: Request, 
       signature
     };
 
-    const result = await supabaseConsentService.revokeConsent(request, userId);
+    const result = await pgConsentService.revokeConsent(request, userId);
     res.json(result);
   } catch (error: any) {
     logger.error('Error revoking consent', { error: error.message });
@@ -119,7 +119,7 @@ consentRouter.post('/revoke/:consentId', authenticateUser, async (req: Request, 
 consentRouter.get('/user/me', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id; // From Supabase auth middleware
-    const consents = await supabaseConsentService.getActiveConsents(userId);
+    const consents = await pgConsentService.getActiveConsents(userId);
     res.json({ consents, count: consents.length });
   } catch (error: any) {
     logger.error('Error getting user consents', { error: error.message });
@@ -149,7 +149,7 @@ consentRouter.get('/user/:userId', authenticateUser, async (req: Request, res: R
       } as APIError);
     }
     
-    const consents = await supabaseConsentService.getActiveConsents(userId);
+    const consents = await pgConsentService.getActiveConsents(userId);
     res.json({ consents, count: consents.length });
   } catch (error: any) {
     logger.error('Error getting user consents', { error: error.message });

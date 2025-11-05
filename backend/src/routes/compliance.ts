@@ -5,7 +5,7 @@
 import { Router, Request, Response } from 'express';
 import { ComplianceStatus, APIError } from '@consentire/shared';
 import { logger } from '../utils/logger';
-import { supabaseConsentService } from '../services/supabaseConsentService';
+import { pgConsentService } from '../services/pgConsentService';
 import { authenticateUser, requireAdmin } from '../middleware/supabaseAuth';
 import { databaseService } from '../services/databaseService';
 
@@ -74,7 +74,7 @@ complianceRouter.get('/status/:controllerHash', authenticateUser, async (req: Re
     // Use the authorized hash (or requested hash for regulators)
     const controllerHash = authorizedControllerHash || requestedHash;
     
-    const metrics = await supabaseConsentService.getComplianceMetrics(controllerHash);
+    const metrics = await pgConsentService.getComplianceMetrics(controllerHash);
     const complianceStatus: ComplianceStatus = {
       controllerHash: metrics.controllerHash,
       gdprArticle7: true,
@@ -105,7 +105,7 @@ complianceRouter.get('/status/:controllerHash', authenticateUser, async (req: Re
 complianceRouter.get('/report/:controllerHash', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { controllerHash } = req.params;
-    const report = await supabaseConsentService.getComplianceReport(controllerHash);
+    const report = await pgConsentService.getComplianceReport(controllerHash);
     res.json({
       controller: report.controller,
       metrics: report.metrics,

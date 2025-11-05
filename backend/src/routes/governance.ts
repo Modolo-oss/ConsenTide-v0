@@ -12,7 +12,7 @@ import {
 } from '@consentire/shared';
 import { logger } from '../utils/logger';
 import { authenticateUser } from '../middleware/supabaseAuth';
-import { supabaseGovernanceService } from '../services/supabaseGovernanceService';
+import { pgGovernanceService } from '../services/pgGovernanceService';
 
 export const governanceRouter = Router();
 
@@ -33,7 +33,7 @@ governanceRouter.post('/proposals', authenticateUser, async (req: Request, res: 
         timestamp: Date.now()
       } as APIError);
     }
-    const created = await supabaseGovernanceService.createProposal(proposal, req.user!.id);
+    const created = await pgGovernanceService.createProposal(proposal, req.user!.id);
     res.status(201).json(created);
   } catch (error: any) {
     logger.error('Error creating proposal', { error: error.message });
@@ -51,7 +51,7 @@ governanceRouter.post('/proposals', authenticateUser, async (req: Request, res: 
  */
 governanceRouter.get('/proposals', async (req: Request, res: Response) => {
   try {
-    const proposals = await supabaseGovernanceService.listProposals();
+    const proposals = await pgGovernanceService.listProposals();
     res.json({ proposals, count: proposals.length });
   } catch (error: any) {
     logger.error('Error getting proposals', { error: error.message });
@@ -70,7 +70,7 @@ governanceRouter.get('/proposals', async (req: Request, res: Response) => {
 governanceRouter.get('/proposals/:proposalId', async (req: Request, res: Response) => {
   try {
     const { proposalId } = req.params;
-    const { proposal, tally } = await supabaseGovernanceService.getProposalWithTally(proposalId);
+    const { proposal, tally } = await pgGovernanceService.getProposalWithTally(proposalId);
     if (!proposal) {
       return res.status(404).json({
         code: 'NOT_FOUND',
@@ -104,7 +104,7 @@ governanceRouter.post('/vote', authenticateUser, async (req: Request, res: Respo
         timestamp: Date.now()
       } as APIError);
     }
-    const result = await supabaseGovernanceService.castVote(vote.proposalId, req.user!.id, vote.choice);
+    const result = await pgGovernanceService.castVote(vote.proposalId, req.user!.id, vote.choice);
     res.status(201).json(result);
   } catch (error: any) {
     logger.error('Error casting vote', { error: error.message });
