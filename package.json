@@ -22,5 +22,8 @@
   "devDependencies": {
     "concurrently": "^8.2.2"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@noble/hashes": "^2.0.1"
+  }
 }

@@ -5,8 +5,12 @@
 
 import * as ed25519 from '@noble/ed25519';
 import * as secp256k1 from '@noble/secp256k1';
+import { sha512 } from '@noble/hashes/sha2.js';
 import { createHash, randomBytes } from 'crypto';
 import { logger } from '../utils/logger';
+
+// Configure @noble/ed25519 for synchronous methods in Node.js
+ed25519.etc.sha512Sync = (...m) => sha512(ed25519.etc.concatBytes(...m));
 
 export enum SignatureAlgorithm {
   ED25519 = 'ed25519',

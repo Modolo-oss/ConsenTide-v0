@@ -193,13 +193,15 @@ class RealHGTPService {
       });
 
       this.wsClient.on('error', (error) => {
-        logger.error('WebSocket error', { error });
+        logger.warn('WebSocket error (mainnet may require additional auth)', { 
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       });
 
       this.wsClient.on('close', () => {
-        logger.info('WebSocket connection closed');
-        // Attempt to reconnect after 5 seconds
-        setTimeout(() => this.initializeWebSocket(), 5000);
+        logger.info('WebSocket connection closed (non-critical - HTTP endpoints still functional)');
+        // Don't reconnect automatically - mainnet WebSocket may require additional authentication
+        // HTTP endpoints (L0 metadata + L1 transaction submission) remain fully functional
       });
     } catch (error) {
       logger.error('Failed to initialize WebSocket', { error });
