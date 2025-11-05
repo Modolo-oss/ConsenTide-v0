@@ -1,0 +1,63 @@
+DETAILS
+🚀 Constellation x LegalTech Hackathon
+“Code for Trust, Compliance & Decentralization” 🛠️ Powered by Constellation Network | 💰 Prize Pool: $10,000 USD
+
+✨ About This Hackathon
+The next evolution of the internet will be verifiable, decentralized, and accountable. Constellation Network invites developers, legal minds, and public interest technologists to build the next generation of LegalTech and RegTech infrastructure using scalable, interoperable, and zero-trust architecture.
+
+📚 You can learn more about Constellation’s “Digital Evidence” approach to key industry use cases here.
+
+This hackathon is your chance to build applications that:
+
+Reinvent legal processes
+Automate compliance
+Restore transparency in a digital world
+Leverage the Constellation Hypergraph for secure, efficient data validation at scale
+Whether you're building for startups, governments, or open-source communities—this is your launchpad.
+
+🔧 Why Build on Constellation?
+Constellation offers a unique framework to build secure, decentralized applications that prioritize:
+
+✅ Data integrity
+✅ Trustless workflows
+✅ Massive scalability
+🔗 Constellation Tech You Can Use
+Hypergraph Transfer Protocol (HGTP): DAG-based, scalable data validation
+Metagraphs: Custom logic + tokenomics on a dedicated channel
+L0 Standard: Interoperable with other chains and legacy systems
+El Paca: Social token for creating programmatic community participation
+💰 Prize Pool Breakdown – $10,000 USD
+Best LegalTech DApp $3,000 - Apps that automates legal agreements, identity, or rights enforcement 
+
+Best RegTech Tool $3,000 - Compliance dashboard, real-time auditing, or KYC/AML innovation
+
+Best Use of a Metagraph $1,500 - Technical excellence in creating custom, scalable logic on L_0
+
+Most Impactful Public Interest App $1,000 - Tools for civic transparency, open government, or digital justice
+
+Best Solo Hacker Build $500 - Awarded to the best solo-developed submission
+
+Community Favorite$1,000 - Voted by participants & audience (social engagement + presentation)
+
+🎁 Bonus bounties and future ecosystem grants may be unlocked for exceptional teams.
+
+💡 Project Inspiration
+Here are some ideas to spark your imagination:
+
+Smart Contract Vaults (multi-sig legal execution)
+Cross-border DAO Compliance Toolkit
+Dynamic GDPR Consent Ledger using Hypergraph
+Real-time ESG Data Verifier for Enterprises
+Arbitration as a Service on-chain
+Whistleblower Anonymous Filing System
+Tokenized Access to Law Libraries via State Channels
+📌 Requirements
+To qualify for prizes, submissions must:
+
+Be deployed on or integrated with Constellation Network
+Use at least one of the following: Metagraphs, HGTP, L0 standard, or Constellation APIs
+Solve a problem in the legal, compliance, or civic governance space
+Be open-source, with a public repo, working demo, and 2-minute walkthrough video
+Bounty providers and hackathon producers reserve the right to reward less than the total number of awards or the award amount allocated for this track if submissions quality don't meet the criteria.
+
+All participants agree to hold bounty providers and hackathon producers harmless before. during, and after this event for all actions and outcomes resulting from participation in this event.
