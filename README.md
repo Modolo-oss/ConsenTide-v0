@@ -28,15 +28,17 @@ ConsenTide is a privacy-first consent ledger that lets users grant, monitor, and
 
 ## 🚀 Features
 
-- ✅ **Zero-Knowledge Consent Proofs** – Verify consent without exposing personal data
+- 🚧 **Zero-Knowledge Consent Proofs** – Placeholder mode (full circuit compilation pending)
 - ✅ **Dynamic Consent Lifecycle** – Grant → Use → Revoke → Audit in real-time
 - ✅ **Cross-Platform Integration** – RESTful API for any system (CRM, ERP, marketing tools)
 - ✅ **Regulatory Compliance Dashboard** – Real-time GDPR Article 7 & 13 compliance status
 - ✅ **Immutable Audit Trail** – Every consent action hash-anchored to HGTP
 - ✅ **Token-Governed Privacy** – El Paca used for community voting on privacy policies
-- ✅ **Production Database** – Railway PostgreSQL with auto-migration
-- ✅ **Unified Authentication** – Email/password + Supabase OAuth integration
+- ✅ **Production Database** – Replit PostgreSQL via Supabase client
+- ✅ **Authentication** – Email/password + JWT tokens (Supabase Auth integration)
 - ✅ **GDPR Compliant Schema** – Complete database schema with proper indexing
+- ✅ **Constellation Mainnet Integration** – Live HGTP anchoring to L1 DAG (Network ID: 1)
+- 🚧 **Zero-Knowledge Proofs** – Placeholder implementation (full circuits pending)
 
 ## 📁 Project Structure
 
@@ -95,29 +97,38 @@ For detailed setup instructions, see [docs/SETUP.md](./docs/SETUP.md).
 
 ## 🚀 Production Deployment
 
-See [docs/PRODUCTION.md](./docs/PRODUCTION.md) for production deployment guide.
-See [docs/PRODUCTION_ID.md](./docs/PRODUCTION_ID.md) for production guide in Indonesian (Bahasa Indonesia).
+### Replit Deployment (Current)
+The application is **already deployed and running** on Replit with:
+- Frontend: Port 5000 (Next.js)
+- Backend: Port 3001 (Express API)
+- Database: Managed PostgreSQL
+- Constellation: Mainnet credentials in Replit Secrets
+
+### Environment Configuration
+See `.env.example` for required environment variables. Critical credentials (Constellation private keys) must be stored in **Replit Secrets**, not in code.
 
 ## 🗄️ Database Setup
 
-### Railway PostgreSQL (Recommended)
-1. **Create Railway account** at [railway.app](https://railway.app)
-2. **Deploy PostgreSQL** service
-3. **Copy environment variables** to `.env`
-4. **Backend auto-creates schema** on first run
+### Replit PostgreSQL (via Supabase Client)
+1. **Database automatically provisioned** by Replit
+2. **Environment variables auto-configured** (DATABASE_URL, PGHOST, PGPORT, PGUSER, PGPASSWORD)
+3. **Schema**: Legacy SQL schema in `database/schema.sql`
+4. **Data Access**: Supabase client services (supabaseConsentService, supabaseControllerService)
+5. **Production-ready** with automatic backups
 
 ### Manual Schema Setup
 ```bash
 # Run schema manually if needed
-PGPASSWORD=your_password psql -h your_host -U postgres -p 5432 -d railway -f database/schema.sql
+PGPASSWORD=$PGPASSWORD psql -h $PGHOST -U $PGUSER -p $PGPORT -d $PGDATABASE -f database/schema.sql
 ```
 
 ## 🔐 Authentication
 
 ### Supported Methods
-- **Email/Password**: Traditional authentication
-- **Supabase OAuth**: GitHub, Google, etc.
-- **Unified Login**: Single system supporting both methods
+- **Email/Password**: Via Supabase Auth with bcrypt hashing
+- **JWT Tokens**: Supabase-issued tokens (24-hour expiration)
+- **Role-Based Access Control**: User, Controller, Admin, Regulator roles
+- **Optional OAuth**: GitHub, Google (if Supabase configured)
 
 ### Demo Accounts
 - **Admin**: `admin@consentire.io` / `admin123`
@@ -131,33 +142,47 @@ See [docs/API.md](./docs/API.md) for full API documentation.
 
 ## 🏆 Current Status
 
-### ✅ Completed Features
-- **Database Integration**: Railway PostgreSQL with auto-migration
-- **Authentication System**: Unified login (Email + Supabase OAuth)
-- **User Interface**: Complete dashboard and admin console
-- **API Gateway**: RESTful endpoints for all operations
-- **GDPR Compliance**: Complete schema and validation
-- **Demo System**: Ready-to-use accounts and data
+### ✅ Production Ready (Deployed on Replit)
+- **Database Integration**: Replit PostgreSQL accessed via Supabase client
+  - Legacy SQL schema in `database/schema.sql`
+  - Supabase services layer for data access
+- **Authentication System**: Supabase Auth + JWT tokens with bcrypt password hashing
+  - Email/password authentication
+  - Role-based access control (User, Controller, Admin, Regulator)
+- **User Interface**: Complete dashboard and admin console (Next.js 14)
+- **API Gateway**: RESTful endpoints for all operations (Express + TypeScript)
+- **GDPR Compliance**: Complete schema with proper indexing and audit trails
+- **Constellation Mainnet**: LIVE HGTP integration with signed transactions
+  - **L0 Endpoint**: https://l0-lb-mainnet.constellationnetwork.io (Node metadata)
+  - **L1 Endpoint**: https://l1-lb-mainnet.constellationnetwork.io (DAG transactions)
+  - **Network ID**: 1 (Mainnet)
+  - **Transaction Signing**: Ed25519 with @noble/ed25519 + SHA-512
+  - **No Simulation**: Production-only mode, all consents anchor to real blockchain
+- **Production Deployment**: Running on Replit with production credentials in Secrets
 
 ### 🚧 In Development
-- **ZK Proofs**: Zero-knowledge consent verification
-- **HGTP Integration**: Constellation Hypergraph anchoring
-- **Metagraph**: Scala L0 implementation
-- **Production Deployment**: Cloud infrastructure setup
+- **ZK Proofs**: Placeholder mode (full circom circuit compilation pending)
+  - Service implemented but using simulated proofs
+  - Production requires: `circom consent.circom --r1cs --wasm --sym` + snarkjs setup
+- **Metagraph**: Scala L0 implementation (optional/not critical for MVP)
+  - Code exists in `metagraph/` folder
+  - Not actively used (system connects directly to Constellation L0/L1)
 
-### 🎯 Hackathon Ready
-- **Functional Prototype**: End-to-end consent management
-- **Production Database**: Railway PostgreSQL
-- **Scalable Architecture**: Modular, maintainable code
-- **Documentation**: Complete setup and API guides
+### 🎯 Hackathon Demo Ready
+- **Working MVP**: End-to-end consent management with real blockchain anchoring
+- **Production Database**: Replit PostgreSQL with complete GDPR schema
+- **Live Blockchain**: All consent transactions submit to Constellation Mainnet
+- **Scalable Architecture**: Modular, maintainable TypeScript codebase
+- **Complete Documentation**: Setup guides, API docs, architecture details
 
 ## 🔒 Security
 
-- Zero-knowledge proofs for consent verification
-- AES-256 encryption for personal data
-- SHA-256 hashing for identifiers
-- Immutable HGTP anchoring
-- Multi-signature validation
+- Zero-knowledge proofs (placeholder - full circuits pending)
+- SHA-256 hashing for controller identifiers
+- Ed25519 signatures for Constellation transactions
+- Immutable HGTP anchoring to mainnet
+- Bcrypt password hashing (10 salt rounds)
+- JWT token-based authentication
 
 ## 📄 License
 
