@@ -112,15 +112,6 @@ export default function LoginPage() {
           </div>
           <div className="space-y-2">
             <button
-              onClick={() => fillDemoCredentials('admin@consentire.io', 'admin123')}
-              className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
-            >
-              <div className="flex justify-between items-center">
-                <span className="font-medium text-blue-900">👤 Admin</span>
-                <span className="text-blue-700">admin@consentire.io / admin123</span>
-              </div>
-            </button>
-            <button
               onClick={() => fillDemoCredentials('user@consentire.io', 'user123')}
               className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
             >
@@ -130,12 +121,21 @@ export default function LoginPage() {
               </div>
             </button>
             <button
-              onClick={() => fillDemoCredentials('org@consentire.io', 'org123')}
+              onClick={() => fillDemoCredentials('controller@consentire.com', 'controller123')}
               className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
             >
               <div className="flex justify-between items-center">
                 <span className="font-medium text-blue-900">🏢 Controller</span>
-                <span className="text-blue-700">org@consentire.io / org123</span>
+                <span className="text-blue-700">controller@consentire.com / controller123</span>
+              </div>
+            </button>
+            <button
+              onClick={() => fillDemoCredentials('regulator@consentire.io', 'reg123')}
+              className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
+            >
+              <div className="flex justify-between items-center">
+                <span className="font-medium text-blue-900">🔬 Regulator</span>
+                <span className="text-blue-700">regulator@consentire.io / reg123</span>
               </div>
             </button>
           </div>

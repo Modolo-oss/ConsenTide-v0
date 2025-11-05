@@ -8,7 +8,7 @@ import {
   UsersIcon
 } from '@heroicons/react/24/outline'
 import { api } from '@/lib/api'
-import { ComplianceStatus } from '@consentire/shared'
+import { ComplianceStatus } from '@/lib/types'
 import { createClient } from '@/lib/supabase'
 
 export default function AdminPage() {

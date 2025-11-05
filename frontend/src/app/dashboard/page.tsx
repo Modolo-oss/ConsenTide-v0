@@ -15,7 +15,7 @@ import {
   ConsentStatus,
   ConsentGrantRequest,
   LegalBasis
-} from '@consentire/shared'
+} from '@/lib/types'
 
 export default function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null)
