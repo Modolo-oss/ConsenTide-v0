@@ -46,4 +46,12 @@ export interface ComplianceStatus {
   score: number;
   lastAudit: number;
   violations: string[];
+  overallCompliance: number;
+  gdprArticle7: boolean;
+  gdprArticle12: boolean;
+  gdprArticle13: boolean;
+  gdprArticle17: boolean;
+  gdprArticle20: boolean;
+  gdprArticle25: boolean;
+  gdprArticle30: boolean;
 }
