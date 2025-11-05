@@ -663,14 +663,14 @@ function ConsentCard({
             <span className="font-semibold text-gray-900 capitalize">{consent.status}</span>
           </div>
           <div className="space-y-2 text-sm text-gray-600">
-            <p><strong>Consent ID:</strong> {consent.consentId.substring(0, 16)}...</p>
-            <p><strong>Controller Hash:</strong> {consent.controllerHash.substring(0, 16)}...</p>
-            <p><strong>Purpose Hash:</strong> {consent.purposeHash.substring(0, 16)}...</p>
+            <p><strong>Consent ID:</strong> {consent.consentId?.substring(0, 16) || 'N/A'}...</p>
+            <p><strong>Controller Hash:</strong> {consent.controllerHash?.substring(0, 16) || 'N/A'}...</p>
+            <p><strong>Purpose Hash:</strong> {consent.purposeHash?.substring(0, 16) || 'N/A'}...</p>
             <p><strong>Granted:</strong> {formatDate(consent.grantedAt)}</p>
             {consent.expiresAt && (
               <p><strong>Expires:</strong> {formatDate(consent.expiresAt)}</p>
             )}
-            <p><strong>HGTP TX Hash:</strong> {consent.hgtpTxHash.substring(0, 16)}...</p>
+            <p><strong>HGTP TX Hash:</strong> {consent.hgtpTxHash?.substring(0, 16) || 'N/A'}...</p>
           </div>
         </div>
         {consent.status === ConsentStatus.GRANTED && (
