@@ -7,6 +7,7 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { authRouter } from './routes/auth';
 import { consentRouter } from './routes/consent';
 import { userRouter } from './routes/user';
 import { controllerRouter } from './routes/controller';
@@ -98,6 +99,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // API routes
+app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/consent', consentRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/controllers', controllerRouter);
