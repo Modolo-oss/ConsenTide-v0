@@ -63,12 +63,20 @@ class RealHGTPService {
   
   constructor() {
     this.config = {
-      nodeUrl: process.env.CONSTELLATION_NODE_URL || 'http://localhost:9200',
-      networkId: process.env.CONSTELLATION_NETWORK_ID || 'integrationnet',
+      nodeUrl: process.env.CONSTELLATION_NODE_URL || 'https://l0-lb-mainnet.constellationnetwork.io',
+      networkId: process.env.CONSTELLATION_NETWORK_ID || '1',
       walletAddress: process.env.CONSTELLATION_WALLET_ADDRESS || '',
       privateKey: process.env.CONSTELLATION_PRIVATE_KEY || '',
       publicKey: process.env.CONSTELLATION_PUBLIC_KEY || ''
     };
+
+    // Log configuration status (without exposing secrets)
+    logger.info('Initializing HGTP Service', {
+      nodeUrl: this.config.nodeUrl,
+      networkId: this.config.networkId,
+      walletConfigured: !!this.config.walletAddress && !!this.config.privateKey,
+      mode: this.config.privateKey ? 'PRODUCTION' : 'SIMULATION'
+    });
 
     this.httpClient = axios.create({
       baseURL: this.config.nodeUrl,
@@ -108,21 +116,33 @@ class RealHGTPService {
    */
   private async testConnection(): Promise<boolean> {
     try {
+      // Check if credentials are configured
+      if (!this.config.privateKey || !this.config.walletAddress) {
+        logger.warn('HGTP Service: No credentials configured, using SIMULATION mode');
+        this.isConnected = false;
+        return false;
+      }
+
       const response = await this.httpClient.get('/node/info');
       
       if (response.status === 200) {
         this.isConnected = true;
-        logger.info('Connected to Constellation node', { 
-          nodeInfo: response.data 
+        logger.info('✅ Connected to Constellation MAINNET', { 
+          nodeUrl: this.config.nodeUrl,
+          networkId: this.config.networkId,
+          nodeInfo: response.data,
+          mode: 'PRODUCTION'
         });
         return true;
       }
       
       return false;
     } catch (error) {
-      logger.warn('Constellation node not available, using enhanced simulation', { 
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.error('Failed to connect to Constellation mainnet', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        nodeUrl: this.config.nodeUrl
       });
+      this.isConnected = false;
       return false;
     }
   }

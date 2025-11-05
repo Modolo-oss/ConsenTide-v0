@@ -7,6 +7,8 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { authRouter } from './routes/auth';
 import { consentRouter } from './routes/consent';
 import { userRouter } from './routes/user';
@@ -18,7 +20,11 @@ import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { createDemoAccounts } from './utils/demoSetup';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 dotenv.config();
+dotenv.config({ path: join(__dirname, '../.env.production') });
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
