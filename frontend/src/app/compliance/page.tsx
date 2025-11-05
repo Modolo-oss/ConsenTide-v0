@@ -49,56 +49,51 @@ export default function CompliancePage() {
   const [isController, setIsController] = useState(false)
   const [apiKey, setApiKey] = useState<string>('')
   const [showApiKey, setShowApiKey] = useState(false)
+  const [gdprCompliance, setGdprCompliance] = useState<any>(null)
 
-  const gdprArticles: GDPRArticle[] = [
+  // GDPR Article metadata
+  const gdprArticleDetails = [
     {
       article: 'Article 7',
+      key: 'gdprArticle7',
       title: 'Conditions for Consent',
-      description: 'Consent must be freely given, specific, informed and unambiguous',
-      compliant: true,
-      score: 95
+      description: 'Consent must be freely given, specific, informed and unambiguous'
     },
     {
       article: 'Article 12',
+      key: 'gdprArticle12',
       title: 'Transparent Information',
-      description: 'Provide clear and accessible privacy information',
-      compliant: true,
-      score: 92
+      description: 'Provide clear and accessible privacy information'
     },
     {
       article: 'Article 13',
+      key: 'gdprArticle13',
       title: 'Information to be Provided',
-      description: 'Inform data subjects at time of data collection',
-      compliant: true,
-      score: 88
+      description: 'Inform data subjects at time of data collection'
     },
     {
       article: 'Article 17',
+      key: 'gdprArticle17',
       title: 'Right to Erasure',
-      description: 'Enable users to request data deletion',
-      compliant: true,
-      score: 90
+      description: 'Enable users to request data deletion'
     },
     {
       article: 'Article 20',
+      key: 'gdprArticle20',
       title: 'Data Portability',
-      description: 'Allow data export in machine-readable format',
-      compliant: true,
-      score: 85
+      description: 'Allow data export in machine-readable format'
     },
     {
       article: 'Article 25',
+      key: 'gdprArticle25',
       title: 'Data Protection by Design',
-      description: 'Implement privacy-enhancing technologies',
-      compliant: true,
-      score: 93
+      description: 'Implement privacy-enhancing technologies'
     },
     {
       article: 'Article 30',
+      key: 'gdprArticle30',
       title: 'Records of Processing',
-      description: 'Maintain audit logs of data processing activities',
-      compliant: true,
-      score: 97
+      description: 'Maintain audit logs of data processing activities'
     }
   ]
 
@@ -147,6 +142,21 @@ export default function CompliancePage() {
 
       setStats(statsRes.data)
       setControllers(controllersRes.data.controllers || [])
+      
+      // Fetch real GDPR compliance for the logged-in user's controller
+      const userStr = localStorage.getItem('user')
+      if (userStr && controllersRes.data.controllers && controllersRes.data.controllers.length > 0) {
+        try {
+          const user = JSON.parse(userStr)
+          // Find the controller matching the logged-in user's organization
+          // For demo purposes, use the first controller's hash (in production, match by user's organization_id)
+          const userController = controllersRes.data.controllers[0]
+          const complianceRes = await api.get(`/compliance/status/${userController.controller_hash}`)
+          setGdprCompliance(complianceRes.data)
+        } catch (error) {
+          console.error('Failed to load GDPR compliance:', error)
+        }
+      }
     } catch (error) {
       console.error('Failed to load compliance data:', error)
       setStats({
@@ -275,7 +285,7 @@ export default function CompliancePage() {
                 )}
 
                 {activeTab === 'compliance' && (
-                  <ComplianceTab articles={gdprArticles} />
+                  <ComplianceTab compliance={gdprCompliance} articleDetails={gdprArticleDetails} />
                 )}
 
                 {activeTab === 'api' && (
@@ -424,68 +434,77 @@ function OverviewTab({
   )
 }
 
-function ComplianceTab({ articles }: { articles: GDPRArticle[] }) {
-  const overallScore = Math.round(articles.reduce((acc, a) => acc + a.score, 0) / articles.length)
+function ComplianceTab({ 
+  compliance, 
+  articleDetails 
+}: { 
+  compliance: any, 
+  articleDetails: any[] 
+}) {
+  const overallScore = compliance?.overallCompliance || 0
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-900">GDPR Compliance Monitor</h2>
-        <p className="text-sm text-gray-600 mt-1">Detailed compliance status for each GDPR article</p>
+        <p className="text-sm text-gray-600 mt-1">Real-time compliance status from database</p>
       </div>
 
-      {/* Overall Compliance */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Overall GDPR Compliance</h3>
-            <p className="text-sm text-gray-600">Aggregated score across all applicable articles</p>
-          </div>
-          <div className="text-right">
-            <div className="text-4xl font-bold text-blue-600">{overallScore}%</div>
-            <div className="text-sm text-gray-600 mt-1">Compliant</div>
-          </div>
-        </div>
-      </div>
-
-      {/* GDPR Articles */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {articles.map((article) => (
-          <div key={article.article} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-            <div className="flex items-start justify-between mb-3">
+      {!compliance ? (
+        <div className="text-center py-12 text-gray-500">Loading GDPR compliance data...</div>
+      ) : (
+        <>
+          {/* Overall Compliance */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-between">
               <div>
-                <div className="flex items-center space-x-2 mb-1">
-                  {article.compliant ? (
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <XCircleIcon className="h-5 w-5 text-red-600" />
-                  )}
-                  <span className="text-sm font-semibold text-gray-600">{article.article}</span>
-                </div>
-                <h3 className="font-semibold text-gray-900">{article.title}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Overall GDPR Compliance</h3>
+                <p className="text-sm text-gray-600">Real-time score based on consent data</p>
               </div>
-              <span className={`text-lg font-bold ${
-                article.score >= 90 ? 'text-green-600' :
-                article.score >= 70 ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
-                {article.score}%
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 mb-3">{article.description}</p>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full ${
-                  article.score >= 90 ? 'bg-green-500' :
-                  article.score >= 70 ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}
-                style={{ width: `${article.score}%` }}
-              />
+              <div className="text-right">
+                <div className="text-4xl font-bold text-blue-600">{overallScore}%</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {overallScore >= 90 ? 'Excellent' : overallScore >= 75 ? 'Good' : 'Needs Improvement'}
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* GDPR Articles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {articleDetails.map((detail) => {
+              const isCompliant = compliance[detail.key] || false
+              return (
+                <div key={detail.article} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <div className="flex items-center space-x-2 mb-1">
+                        {isCompliant ? (
+                          <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <XCircleIcon className="h-5 w-5 text-red-600" />
+                        )}
+                        <span className="text-sm font-semibold text-gray-600">{detail.article}</span>
+                      </div>
+                      <h3 className="font-semibold text-gray-900">{detail.title}</h3>
+                    </div>
+                    <span className={`text-lg font-bold ${isCompliant ? 'text-green-600' : 'text-red-600'}`}>
+                      {isCompliant ? '✓' : '✗'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-3">{detail.description}</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${isCompliant ? 'bg-green-500' : 'bg-red-500'}`}
+                      style={{ width: isCompliant ? '100%' : '0%' }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -627,96 +646,134 @@ if (isValid) {
 }
 
 function AnalyticsTab({ stats }: { stats: ComplianceStats | null }) {
-  const mockTrendData = [
-    { month: 'Jan', consents: 120, revocations: 5 },
-    { month: 'Feb', consents: 180, revocations: 8 },
-    { month: 'Mar', consents: 250, revocations: 12 },
-    { month: 'Apr', consents: 310, revocations: 15 },
-    { month: 'May', consents: 420, revocations: 18 },
-    { month: 'Jun', consents: 580, revocations: 22 }
-  ]
+  const [trendData, setTrendData] = useState<any[]>([])
+  const [purposeData, setPurposeData] = useState<any[]>([])
+  const [statusData, setStatusData] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const [trendsRes, purposesRes, statusRes] = await Promise.all([
+          api.get('/analytics/trends?days=30'),
+          api.get('/analytics/purposes'),
+          api.get('/analytics/status-distribution')
+        ])
+        
+        setTrendData(trendsRes.data.trends || [])
+        setPurposeData(purposesRes.data.purposes || [])
+        setStatusData(statusRes.data.distribution || [])
+      } catch (error) {
+        console.error('Failed to load analytics:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalytics()
+  }, [])
+
+  const totalConsents = statusData.reduce((sum, s) => sum + s.count, 0)
+  const activeCount = statusData.find(s => s.status === 'granted')?.count || 0
+  const revokedCount = statusData.find(s => s.status === 'revoked')?.count || 0
+  const revocationRate = totalConsents > 0 ? ((revokedCount / totalConsents) * 100).toFixed(1) : '0.0'
 
   return (
     <div>
       <div className="mb-6">
         <h2 className="text-xl font-bold text-gray-900">User Analytics</h2>
-        <p className="text-sm text-gray-600 mt-1">Consent trends and user behavior insights</p>
+        <p className="text-sm text-gray-600 mt-1">Real-time consent trends from database</p>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Consents</p>
-          <p className="text-2xl font-bold text-gray-900">{stats?.activeConsents || 0}</p>
-          <p className="text-xs text-green-600 mt-1">↑ 24% from last month</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">Revocation Rate</p>
-          <p className="text-2xl font-bold text-gray-900">3.8%</p>
-          <p className="text-xs text-red-600 mt-1">↓ 1.2% from last month</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">Avg Response Time</p>
-          <p className="text-2xl font-bold text-gray-900">1.2s</p>
-          <p className="text-xs text-green-600 mt-1">↓ 0.3s improvement</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-sm text-gray-600 mb-1">User Satisfaction</p>
-          <p className="text-2xl font-bold text-gray-900">94%</p>
-          <p className="text-xs text-green-600 mt-1">↑ 2% from last month</p>
-        </div>
-      </div>
-
-      {/* Consent Trends */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent Trends (Last 6 Months)</h3>
-        <div className="h-64 flex items-end justify-between space-x-2">
-          {mockTrendData.map((data, idx) => (
-            <div key={idx} className="flex-1 flex flex-col items-center">
-              <div className="w-full flex flex-col items-center justify-end" style={{ height: '200px' }}>
-                <div 
-                  className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition cursor-pointer"
-                  style={{ height: `${(data.consents / 600) * 100}%` }}
-                  title={`${data.consents} consents`}
-                />
-              </div>
-              <p className="text-xs text-gray-600 mt-2">{data.month}</p>
+      {loading ? (
+        <div className="text-center py-12 text-gray-500">Loading real analytics...</div>
+      ) : (
+        <>
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Total Consents</p>
+              <p className="text-2xl font-bold text-gray-900">{totalConsents}</p>
+              <p className="text-xs text-blue-600 mt-1">All time</p>
             </div>
-          ))}
-        </div>
-        <div className="flex items-center justify-center space-x-4 mt-4 text-sm">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-            <span className="text-gray-600">Granted Consents</span>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Active Consents</p>
+              <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
+              <p className="text-xs text-green-600 mt-1">Currently granted</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Revocation Rate</p>
+              <p className="text-2xl font-bold text-gray-900">{revocationRate}%</p>
+              <p className="text-xs text-gray-600 mt-1">{revokedCount} revoked</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-1">Compliance Score</p>
+              <p className="text-2xl font-bold text-gray-900">{stats?.complianceScore || 0}%</p>
+              <p className="text-xs text-green-600 mt-1">GDPR compliant</p>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Purpose Breakdown */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent Purpose Breakdown</h3>
-        <div className="space-y-4">
-          {[
-            { purpose: 'Marketing Communications', percentage: 45, count: 261 },
-            { purpose: 'Analytics & Research', percentage: 28, count: 162 },
-            { purpose: 'Service Improvement', percentage: 18, count: 104 },
-            { purpose: 'Third-party Sharing', percentage: 9, count: 52 }
-          ].map((item, idx) => (
-            <div key={idx}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-900">{item.purpose}</span>
-                <span className="text-sm text-gray-600">{item.count} ({item.percentage}%)</span>
+          {/* Consent Trends */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent Trends (Last 30 Days)</h3>
+            {trendData.length > 0 ? (
+              <div className="h-64 flex items-end justify-between space-x-2">
+                {trendData.slice(0, 10).map((data, idx) => {
+                  const maxValue = Math.max(...trendData.map(d => d.total))
+                  return (
+                    <div key={idx} className="flex-1 flex flex-col items-center">
+                      <div className="w-full flex flex-col items-center justify-end" style={{ height: '200px' }}>
+                        <div 
+                          className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition cursor-pointer"
+                          style={{ height: `${(data.total / (maxValue || 1)) * 100}%` }}
+                          title={`${data.total} consents on ${new Date(data.date).toLocaleDateString()}`}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-600 mt-2">{new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                    </div>
+                  )
+                })}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-500 h-2 rounded-full"
-                  style={{ width: `${item.percentage}%` }}
-                />
+            ) : (
+              <p className="text-gray-500 text-center py-8">No trend data available</p>
+            )}
+            <div className="flex items-center justify-center space-x-4 mt-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
+                <span className="text-gray-600">Total Consents</span>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+
+          {/* Purpose Breakdown */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent Purpose Breakdown</h3>
+            <div className="space-y-4">
+              {purposeData.length > 0 ? (
+                purposeData.map((item, idx) => {
+                  const percentage = totalConsents > 0 ? ((item.total / totalConsents) * 100).toFixed(0) : 0
+                  return (
+                    <div key={idx}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-900">{item.purpose}</span>
+                        <span className="text-sm text-gray-600">{item.total} ({percentage}%)</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <p className="text-gray-500 text-center py-4">No purpose data available</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

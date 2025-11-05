@@ -13,6 +13,7 @@ import { userRouter } from './routes/user';
 import { controllerRouter } from './routes/controller';
 import { complianceRouter } from './routes/compliance';
 import { governanceRouter } from './routes/governance';
+import { analyticsRouter } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { createDemoAccounts } from './utils/demoSetup';
@@ -121,6 +122,7 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/controllers', controllerRouter);
 app.use('/api/v1/compliance', complianceRouter);
 app.use('/api/v1/governance', governanceRouter);
+app.use('/api/v1/analytics', analyticsRouter);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

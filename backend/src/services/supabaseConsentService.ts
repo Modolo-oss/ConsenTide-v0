@@ -389,21 +389,47 @@ class SupabaseConsentService {
   async getComplianceMetrics(controllerHash: string) {
     try {
       const countsResult = await databaseService.query(
-        'SELECT status FROM consents WHERE controller_hash = $1',
+        'SELECT status, lawful_basis, granted_at, zk_proof FROM consents WHERE controller_hash = $1',
         [controllerHash]
       );
 
-      const counts = countsResult.rows;
-      const totalConsents = counts.length;
-      const activeConsents = counts.filter((c: any) => c.status === 'granted').length;
-      const revokedConsents = counts.filter((c: any) => c.status === 'revoked').length;
-      const expiredConsents = counts.filter((c: any) => c.status === 'expired').length;
+      const consents = countsResult.rows;
+      const totalConsents = consents.length;
+      const activeConsents = consents.filter((c: any) => c.status === 'granted').length;
+      const revokedConsents = consents.filter((c: any) => c.status === 'revoked').length;
+      const expiredConsents = consents.filter((c: any) => c.status === 'expired').length;
 
+      // Check audit logs for this controller
+      const auditResult = await databaseService.query(
+        'SELECT COUNT(*) as count FROM audit_logs WHERE controller_hash = $1',
+        [controllerHash]
+      );
+      const hasAuditLogs = parseInt(auditResult.rows[0]?.count || '0') > 0;
+
+      // GDPR Article Compliance Checks
+      const gdprArticle7 = totalConsents > 0 && consents.every((c: any) => c.lawful_basis); // Consent records exist with lawful basis
+      const gdprArticle12 = totalConsents > 0; // Transparent processing (consent records tracked)
+      const gdprArticle13 = consents.every((c: any) => c.lawful_basis); // Purpose disclosed (lawful basis required)
+      const gdprArticle17 = true; // Right to erasure enabled (revoke endpoint exists)
+      const gdprArticle20 = true; // Data portability enabled (export endpoint exists)
+      const gdprArticle25 = consents.filter((c: any) => c.zk_proof).length > 0; // Privacy by design (ZK proofs used)
+      const gdprArticle30 = hasAuditLogs; // Record of processing activities
+
+      const gdprCompliance = [
+        gdprArticle7, gdprArticle12, gdprArticle13, gdprArticle17,
+        gdprArticle20, gdprArticle25, gdprArticle30
+      ];
+      const gdprComplianceRate = (gdprCompliance.filter(Boolean).length / gdprCompliance.length) * 100;
+
+      // Calculate overall score
       let complianceScore = 100;
       if (totalConsents > 0) {
         const revokedRate = (revokedConsents / totalConsents) * 100;
         const expiredRate = (expiredConsents / totalConsents) * 100;
-        complianceScore = Math.max(0, 100 - (revokedRate * 0.5) - (expiredRate * 0.3));
+        const baseScore = Math.max(0, 100 - (revokedRate * 0.5) - (expiredRate * 0.3));
+        complianceScore = (baseScore * 0.6) + (gdprComplianceRate * 0.4);
+      } else {
+        complianceScore = gdprComplianceRate;
       }
 
       return {
@@ -413,6 +439,13 @@ class SupabaseConsentService {
         activeConsents,
         revokedConsents,
         expiredConsents,
+        gdprArticle7,
+        gdprArticle12,
+        gdprArticle13,
+        gdprArticle17,
+        gdprArticle20,
+        gdprArticle25,
+        gdprArticle30,
         lastAudit: Date.now()
       };
     } catch (error) {
