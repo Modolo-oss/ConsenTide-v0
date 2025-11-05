@@ -73,13 +73,25 @@ class RealHGTPService {
       publicKey: process.env.CONSTELLATION_PUBLIC_KEY || ''
     };
 
+    // PRODUCTION MODE: Validate required credentials
+    if (!this.config.privateKey || !this.config.publicKey || !this.config.walletAddress) {
+      logger.error('HGTP Service PRODUCTION MODE requires credentials', {
+        missingKeys: {
+          privateKey: !this.config.privateKey,
+          publicKey: !this.config.publicKey,
+          walletAddress: !this.config.walletAddress
+        }
+      });
+      throw new Error('CONSTELLATION_PRIVATE_KEY, CONSTELLATION_PUBLIC_KEY, and CONSTELLATION_WALLET_ADDRESS are required for production mode');
+    }
+
     // Log configuration status (without exposing secrets)
-    logger.info('Initializing HGTP Service', {
+    logger.info('Initializing HGTP Service - PRODUCTION MODE', {
       l0Node: this.config.nodeUrl,
       l1Node: this.config.l1Url,
       networkId: this.config.networkId,
-      walletConfigured: !!this.config.walletAddress && !!this.config.privateKey,
-      mode: this.config.privateKey ? 'PRODUCTION' : 'SIMULATION'
+      walletConfigured: true,
+      mode: 'PRODUCTION'
     });
 
     // L0 client for node info and metadata
@@ -106,38 +118,34 @@ class RealHGTPService {
   }
 
   /**
-   * Initialize connection to Constellation network
+   * Initialize connection to Constellation network (PRODUCTION MODE)
    */
   private async initializeConnection() {
-    try {
-      // Test HTTP connection
-      await this.testConnection();
-      
-      // Initialize WebSocket for real-time updates
-      await this.initializeWebSocket();
-      
-      logger.info('HGTP service initialized successfully', {
-        nodeUrl: this.config.nodeUrl,
-        networkId: this.config.networkId
-      });
-    } catch (error) {
-      logger.error('Failed to initialize HGTP connection', { error });
-      // Continue with fallback mode
+    // Test HTTP connection - MUST succeed in production mode
+    const connected = await this.testConnection();
+    
+    if (!connected) {
+      throw new Error('Failed to connect to Constellation Mainnet - cannot operate in production mode without connection');
     }
+    
+    // Initialize WebSocket for real-time updates (best effort - not blocking)
+    try {
+      await this.initializeWebSocket();
+    } catch (error) {
+      logger.warn('WebSocket initialization failed (non-blocking)', { error });
+    }
+    
+    logger.info('HGTP service initialized successfully', {
+      nodeUrl: this.config.nodeUrl,
+      networkId: this.config.networkId
+    });
   }
 
   /**
-   * Test connection to Constellation node
+   * Test connection to Constellation node (PRODUCTION MODE)
    */
   private async testConnection(): Promise<boolean> {
     try {
-      // Check if credentials are configured
-      if (!this.config.privateKey || !this.config.walletAddress) {
-        logger.warn('HGTP Service: No credentials configured, using SIMULATION mode');
-        this.isConnected = false;
-        return false;
-      }
-
       const response = await this.httpClient.get('/node/info');
       
       if (response.status === 200) {
@@ -151,6 +159,7 @@ class RealHGTPService {
         return true;
       }
       
+      logger.error('Constellation node returned unexpected status', { status: response.status });
       return false;
     } catch (error) {
       logger.error('Failed to connect to Constellation mainnet', { 
@@ -359,37 +368,30 @@ class RealHGTPService {
   }
 
   /**
-   * Create signed transaction
+   * Create signed transaction (PRODUCTION MODE - requires credentials)
    */
   private async createSignedTransaction(data: any): Promise<HGTPTransaction> {
-    const message = JSON.stringify(data);
-    
-    // Sign with our private key if available
-    if (this.config.privateKey && this.config.publicKey) {
-      const signatureResult = await cryptoService.signMessage(
-        message,
-        this.config.privateKey,
-        'ed25519' as any
-      );
-
-      return {
-        namespace: data.namespace,
-        data,
-        signatures: [{
-          publicKey: this.config.publicKey,
-          signature: signatureResult.signature,
-          algorithm: 'ed25519'
-        }],
-        fee: this.calculateFee(data),
-        timestamp: Date.now()
-      };
+    // Enforce signing in production mode
+    if (!this.config.privateKey || !this.config.publicKey) {
+      throw new Error('Cannot create transaction without private key - production mode requires signed transactions');
     }
 
-    // Create unsigned transaction for simulation
+    const message = JSON.stringify(data);
+    
+    const signatureResult = await cryptoService.signMessage(
+      message,
+      this.config.privateKey,
+      'ed25519' as any
+    );
+
     return {
       namespace: data.namespace,
       data,
-      signatures: [],
+      signatures: [{
+        publicKey: this.config.publicKey,
+        signature: signatureResult.signature,
+        algorithm: 'ed25519'
+      }],
       fee: this.calculateFee(data),
       timestamp: Date.now()
     };
