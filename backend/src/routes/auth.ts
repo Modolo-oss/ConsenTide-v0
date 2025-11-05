@@ -82,6 +82,7 @@ authRouter.get('/me', async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         did: user.did,
+        organizationId: user.organization_id,
         publicKey: user.public_key,
         walletAddress: user.wallet_address,
         createdAt: user.created_at,

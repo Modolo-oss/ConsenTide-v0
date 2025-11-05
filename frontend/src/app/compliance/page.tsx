@@ -50,6 +50,7 @@ export default function CompliancePage() {
   const [apiKey, setApiKey] = useState<string>('')
   const [showApiKey, setShowApiKey] = useState(false)
   const [gdprCompliance, setGdprCompliance] = useState<any>(null)
+  const [currentControllerHash, setCurrentControllerHash] = useState<string | undefined>(undefined)
 
   // GDPR Article metadata
   const gdprArticleDetails = [
@@ -145,14 +146,27 @@ export default function CompliancePage() {
       
       // Fetch real GDPR compliance for the logged-in user's controller
       const userStr = localStorage.getItem('user')
-      if (userStr && controllersRes.data.controllers && controllersRes.data.controllers.length > 0) {
+      if (userStr) {
         try {
           const user = JSON.parse(userStr)
-          // Find the controller matching the logged-in user's organization
-          // For demo purposes, use the first controller's hash (in production, match by user's organization_id)
-          const userController = controllersRes.data.controllers[0]
-          const complianceRes = await api.get(`/compliance/status/${userController.controller_hash}`)
-          setGdprCompliance(complianceRes.data)
+          
+          // Find the controller matching the logged-in user's organization_id
+          if (user.organizationId) {
+            const userController = controllersRes.data.controllers.find(
+              (ctrl: any) => ctrl.organization_id === user.organizationId
+            )
+            
+            if (userController) {
+              setCurrentControllerHash(userController.controller_hash)
+              const complianceRes = await api.get(`/compliance/status/${userController.controller_hash}`)
+              setGdprCompliance(complianceRes.data)
+            } else {
+              console.error(`No controller found for organizationId: ${user.organizationId}`)
+              // Do NOT fallback to first controller - this would expose other organization's data
+            }
+          } else {
+            console.warn('User has no organizationId assigned')
+          }
         } catch (error) {
           console.error('Failed to load GDPR compliance:', error)
         }
@@ -298,7 +312,7 @@ export default function CompliancePage() {
                 )}
 
                 {activeTab === 'analytics' && (
-                  <AnalyticsTab stats={stats} />
+                  <AnalyticsTab stats={stats} controllerHash={currentControllerHash} />
                 )}
               </div>
             </div>
@@ -645,7 +659,7 @@ if (isValid) {
   )
 }
 
-function AnalyticsTab({ stats }: { stats: ComplianceStats | null }) {
+function AnalyticsTab({ stats, controllerHash }: { stats: ComplianceStats | null, controllerHash?: string }) {
   const [trendData, setTrendData] = useState<any[]>([])
   const [purposeData, setPurposeData] = useState<any[]>([])
   const [statusData, setStatusData] = useState<any[]>([])
@@ -654,10 +668,13 @@ function AnalyticsTab({ stats }: { stats: ComplianceStats | null }) {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+        // Build query params with controller filtering
+        const hashParam = controllerHash ? `&controllerHash=${controllerHash}` : ''
+        
         const [trendsRes, purposesRes, statusRes] = await Promise.all([
-          api.get('/analytics/trends?days=30'),
-          api.get('/analytics/purposes'),
-          api.get('/analytics/status-distribution')
+          api.get(`/analytics/trends?days=30${hashParam}`),
+          api.get(`/analytics/purposes?${hashParam.substring(1)}`),
+          api.get(`/analytics/status-distribution?${hashParam.substring(1)}`)
         ])
         
         setTrendData(trendsRes.data.trends || [])
@@ -671,7 +688,7 @@ function AnalyticsTab({ stats }: { stats: ComplianceStats | null }) {
     }
 
     fetchAnalytics()
-  }, [])
+  }, [controllerHash])
 
   const totalConsents = statusData.reduce((sum, s) => sum + s.count, 0)
   const activeCount = statusData.find(s => s.status === 'granted')?.count || 0

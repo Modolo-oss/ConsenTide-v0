@@ -15,6 +15,7 @@ declare global {
         id: string;
         email?: string;
         role?: string;
+        organizationId?: string;
       };
     }
   }
@@ -54,7 +55,8 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     req.user = {
       id: decoded.userId,
       email: decoded.email,
-      role: decoded.role || 'user'
+      role: decoded.role || 'user',
+      organizationId: decoded.organizationId
     };
 
     logger.info('User authenticated', { 
@@ -102,7 +104,8 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       req.user = {
         id: decoded.userId,
         email: decoded.email,
-        role: decoded.role || 'user'
+        role: decoded.role || 'user',
+        organizationId: decoded.organizationId
       };
     }
 

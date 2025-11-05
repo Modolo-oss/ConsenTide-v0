@@ -7,16 +7,73 @@ import { ComplianceStatus, APIError } from '@consentire/shared';
 import { logger } from '../utils/logger';
 import { supabaseConsentService } from '../services/supabaseConsentService';
 import { authenticateUser, requireAdmin } from '../middleware/supabaseAuth';
+import { databaseService } from '../services/databaseService';
 
 export const complianceRouter = Router();
 
 /**
- * GET /api/v1/compliance/status/:controllerHash
- * Get GDPR compliance status for a controller (admin only)
+ * Helper function to get authorized controller_hash for compliance access
+ * Returns controller_hash if user is controller, null if regulator/admin (access all data)
  */
-complianceRouter.get('/status/:controllerHash', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
+async function getAuthorizedControllerHashForCompliance(req: Request): Promise<string | null> {
+  const user = req.user;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Regulators and admins can access all data - no filtering
+  if (user.role === 'regulator' || user.role === 'admin') {
+    return null;
+  }
+
+  // Controllers can only access their own organization's data
+  if (user.role === 'controller' && user.organizationId) {
+    // Resolve controller_hash from organizationId
+    const result = await databaseService.query(
+      'SELECT controller_hash FROM controllers WHERE organization_id = $1',
+      [user.organizationId]
+    );
+    
+    if (result.rows.length === 0) {
+      throw new Error(`No controller found for organizationId: ${user.organizationId}`);
+    }
+    
+    return result.rows[0].controller_hash;
+  }
+
+  // Regular users shouldn't access compliance
+  throw new Error('Insufficient permissions to access compliance data');
+}
+
+/**
+ * GET /api/v1/compliance/status/:controllerHash
+ * Get GDPR compliance status for a controller
+ * SERVER-SIDE VALIDATION: Controllers can only access their own organization's compliance
+ */
+complianceRouter.get('/status/:controllerHash', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const { controllerHash } = req.params;
+    const requestedHash = req.params.controllerHash;
+    
+    // Get authorized controller_hash from JWT (server-side, cannot be tampered)
+    const authorizedControllerHash = await getAuthorizedControllerHashForCompliance(req);
+
+    // Validate: If user is a controller, they can only access their own organization's data
+    if (authorizedControllerHash && requestedHash !== authorizedControllerHash) {
+      logger.warn('Controller attempted to access another organization\'s compliance', {
+        userId: req.user?.id,
+        requestedHash,
+        authorizedHash: authorizedControllerHash
+      });
+      return res.status(403).json({
+        code: 'FORBIDDEN',
+        message: 'Access denied: You can only access your own organization\'s compliance data',
+        timestamp: Date.now()
+      } as APIError);
+    }
+
+    // Use the authorized hash (or requested hash for regulators)
+    const controllerHash = authorizedControllerHash || requestedHash;
+    
     const metrics = await supabaseConsentService.getComplianceMetrics(controllerHash);
     const complianceStatus: ComplianceStatus = {
       controllerHash: metrics.controllerHash,

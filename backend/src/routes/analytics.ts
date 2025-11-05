@@ -11,13 +11,51 @@ import { APIError } from '@consentire/shared';
 export const analyticsRouter = Router();
 
 /**
+ * Helper function to get authorized controller_hash for the current user
+ * Returns controller_hash if user is controller, null if regulator/admin (access all data)
+ */
+async function getAuthorizedControllerHash(req: Request): Promise<string | null> {
+  const user = req.user;
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+
+  // Regulators and admins can access all data - no filtering
+  if (user.role === 'regulator' || user.role === 'admin') {
+    return null;
+  }
+
+  // Controllers can only access their own organization's data
+  if (user.role === 'controller' && user.organizationId) {
+    // Resolve controller_hash from organizationId
+    const result = await databaseService.query(
+      'SELECT controller_hash FROM controllers WHERE organization_id = $1',
+      [user.organizationId]
+    );
+    
+    if (result.rows.length === 0) {
+      throw new Error(`No controller found for organizationId: ${user.organizationId}`);
+    }
+    
+    return result.rows[0].controller_hash;
+  }
+
+  // Regular users shouldn't access analytics
+  throw new Error('Insufficient permissions to access analytics');
+}
+
+/**
  * GET /api/v1/analytics/trends
  * Get consent trends over time
+ * SERVER-SIDE FILTERING: Controllers can only see their own organization's data
  */
 analyticsRouter.get('/trends', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const { controllerHash, days = '30' } = req.query;
+    const { days = '30' } = req.query;
     const daysNum = parseInt(days as string);
+
+    // Get authorized controller_hash from JWT (server-side, cannot be tampered)
+    const authorizedControllerHash = await getAuthorizedControllerHash(req);
 
     let query = `
       SELECT 
@@ -31,9 +69,10 @@ analyticsRouter.get('/trends', authenticateUser, async (req: Request, res: Respo
     `;
 
     const params: any[] = [];
-    if (controllerHash) {
+    // Only filter if user is a controller (not regulator/admin)
+    if (authorizedControllerHash) {
       query += ' AND controller_hash = $1';
-      params.push(controllerHash);
+      params.push(authorizedControllerHash);
     }
 
     query += ' GROUP BY DATE(granted_at) ORDER BY date DESC';
@@ -62,10 +101,12 @@ analyticsRouter.get('/trends', authenticateUser, async (req: Request, res: Respo
 /**
  * GET /api/v1/analytics/purposes
  * Get consent breakdown by purpose
+ * SERVER-SIDE FILTERING: Controllers can only see their own organization's data
  */
 analyticsRouter.get('/purposes', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const { controllerHash } = req.query;
+    // Get authorized controller_hash from JWT (server-side, cannot be tampered)
+    const authorizedControllerHash = await getAuthorizedControllerHash(req);
 
     let query = `
       SELECT 
@@ -76,9 +117,10 @@ analyticsRouter.get('/purposes', authenticateUser, async (req: Request, res: Res
     `;
 
     const params: any[] = [];
-    if (controllerHash) {
+    // Only filter if user is a controller (not regulator/admin)
+    if (authorizedControllerHash) {
       query += ' WHERE controller_hash = $1';
-      params.push(controllerHash);
+      params.push(authorizedControllerHash);
     }
 
     query += ' GROUP BY purpose_hash ORDER BY total DESC';
@@ -105,10 +147,12 @@ analyticsRouter.get('/purposes', authenticateUser, async (req: Request, res: Res
 /**
  * GET /api/v1/analytics/status-distribution
  * Get distribution of consent statuses
+ * SERVER-SIDE FILTERING: Controllers can only see their own organization's data
  */
 analyticsRouter.get('/status-distribution', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const { controllerHash } = req.query;
+    // Get authorized controller_hash from JWT (server-side, cannot be tampered)
+    const authorizedControllerHash = await getAuthorizedControllerHash(req);
 
     let query = `
       SELECT 
@@ -118,9 +162,10 @@ analyticsRouter.get('/status-distribution', authenticateUser, async (req: Reques
     `;
 
     const params: any[] = [];
-    if (controllerHash) {
+    // Only filter if user is a controller (not regulator/admin)
+    if (authorizedControllerHash) {
       query += ' WHERE controller_hash = $1';
-      params.push(controllerHash);
+      params.push(authorizedControllerHash);
     }
 
     query += ' GROUP BY status';
@@ -146,10 +191,31 @@ analyticsRouter.get('/status-distribution', authenticateUser, async (req: Reques
 /**
  * GET /api/v1/analytics/controller/:controllerHash
  * Get comprehensive analytics for a specific controller
+ * SERVER-SIDE VALIDATION: Validates controller_hash matches authenticated user's organization
  */
 analyticsRouter.get('/controller/:controllerHash', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const { controllerHash } = req.params;
+    const requestedHash = req.params.controllerHash;
+    
+    // Get authorized controller_hash from JWT (server-side, cannot be tampered)
+    const authorizedControllerHash = await getAuthorizedControllerHash(req);
+
+    // Validate: If user is a controller, they can only access their own organization's data
+    if (authorizedControllerHash && requestedHash !== authorizedControllerHash) {
+      logger.warn('Controller attempted to access another organization\'s data', {
+        userId: req.user?.id,
+        requestedHash,
+        authorizedHash: authorizedControllerHash
+      });
+      return res.status(403).json({
+        code: 'FORBIDDEN',
+        message: 'Access denied: You can only access your own organization\'s data',
+        timestamp: Date.now()
+      } as APIError);
+    }
+
+    // Use the authorized hash (or requested hash for regulators)
+    const controllerHash = authorizedControllerHash || requestedHash;
 
     const summaryQuery = `
       SELECT 

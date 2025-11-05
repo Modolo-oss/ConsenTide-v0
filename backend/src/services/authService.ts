@@ -23,6 +23,7 @@ export interface AuthResponse {
     email: string;
     role: string;
     did: string;
+    organizationId?: string;
   };
   message?: string;
 }
@@ -38,6 +39,7 @@ export class AuthService {
           ac.email, 
           ac.password_hash, 
           ac.role,
+          ac.organization_id,
           u.did,
           u.public_key
          FROM auth_credentials ac
@@ -71,6 +73,7 @@ export class AuthService {
           email: user.email,
           role: user.role,
           did: user.did,
+          organizationId: user.organization_id,
         },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN }
@@ -86,6 +89,7 @@ export class AuthService {
           email: user.email,
           role: user.role,
           did: user.did,
+          organizationId: user.organization_id,
         },
       };
     } catch (error) {
@@ -114,6 +118,7 @@ export class AuthService {
           u.id,
           ac.email,
           ac.role,
+          ac.organization_id,
           u.did,
           u.public_key,
           u.wallet_address,
