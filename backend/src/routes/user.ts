@@ -9,7 +9,7 @@ import {
   APIError
 } from '@consentire/shared';
 import { generateUserId, generateDID, hash } from '../utils/crypto';
-import { authenticateUser, createUserProfile, getUserProfile, requireOwnership } from '../middleware/supabaseAuth';
+import { authenticateUser, requireOwnership } from '../middleware/supabaseAuth';
 import { logger } from '../utils/logger';
 
 export const userRouter = Router();
@@ -31,25 +31,14 @@ userRouter.post('/register', authenticateUser, async (req: Request, res: Respons
       } as APIError);
     }
 
-    await createUserProfile(req.user!.id, {
-      email: req.user!.email,
-      publicKey: request.publicKey,
-      walletAddress: hash(request.publicKey).substring(0, 40),
-      did: generateDID(request.publicKey),
-      metadata: request.metadata || {}
-    });
-
-    const profile = await getUserProfile(req.user!.id);
-
-    const response: UserRegistrationResponse = {
-      userId: profile.id,
-      did: profile.did,
-      walletAddress: profile.wallet_address,
-      createdAt: new Date(profile.created_at).getTime()
-    };
-
-    logger.info('User profile registered (Supabase)', { userId: response.userId });
-    res.status(201).json(response);
+    // TODO: Implement user profile creation using PostgreSQL pool
+    // This endpoint needs to be updated to use a PostgreSQL-based user service
+    
+    res.status(501).json({
+      code: 'NOT_IMPLEMENTED',
+      message: 'User profile creation needs PostgreSQL implementation',
+      timestamp: Date.now()
+    } as APIError);
   } catch (error: any) {
     logger.error('Error registering user', { error: error.message });
     res.status(500).json({
@@ -66,14 +55,12 @@ userRouter.post('/register', authenticateUser, async (req: Request, res: Respons
  */
 userRouter.get('/me/profile', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const profile = await getUserProfile(req.user!.id);
-    const response: UserRegistrationResponse = {
-      userId: profile.id,
-      did: profile.did,
-      walletAddress: profile.wallet_address,
-      createdAt: new Date(profile.created_at).getTime()
-    };
-    res.json(response);
+    // TODO: Implement user profile retrieval using PostgreSQL pool
+    res.status(501).json({
+      code: 'NOT_IMPLEMENTED',
+      message: 'User profile retrieval needs PostgreSQL implementation',
+      timestamp: Date.now()
+    } as APIError);
   } catch (error: any) {
     logger.error('Error getting current user profile', { error: error.message });
     res.status(500).json({
@@ -90,15 +77,12 @@ userRouter.get('/me/profile', authenticateUser, async (req: Request, res: Respon
  */
 userRouter.get('/:userId', authenticateUser, requireOwnership('userId'), async (req: Request, res: Response) => {
   try {
-    const { userId } = req.params;
-    const profile = await getUserProfile(userId);
-    const response: UserRegistrationResponse = {
-      userId: profile.id,
-      did: profile.did,
-      walletAddress: profile.wallet_address,
-      createdAt: new Date(profile.created_at).getTime()
-    };
-    res.json(response);
+    // TODO: Implement user retrieval using PostgreSQL pool
+    res.status(501).json({
+      code: 'NOT_IMPLEMENTED',
+      message: 'User retrieval needs PostgreSQL implementation',
+      timestamp: Date.now()
+    } as APIError);
   } catch (error: any) {
     logger.error('Error getting user', { error: error.message });
     res.status(500).json({

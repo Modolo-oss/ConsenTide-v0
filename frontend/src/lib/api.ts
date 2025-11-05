@@ -3,7 +3,6 @@
  */
 
 import axios from 'axios'
-import { createClient } from './supabase'
 import type { APIError } from './types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:3001` : 'http://localhost:3001')
@@ -15,14 +14,11 @@ export const api = axios.create({
   },
 })
 
-// Request interceptor
+// Request interceptor - use localStorage token
 api.interceptors.request.use(async (config) => {
   try {
-    // Prefer Supabase session token
     if (typeof window !== 'undefined') {
-      const supabase = createClient()
-      const { data } = await supabase.auth.getSession()
-      const token = data.session?.access_token || window.localStorage.getItem('token')
+      const token = window.localStorage.getItem('token')
       if (token) {
         config.headers = config.headers || {}
         ;(config.headers as any).Authorization = `Bearer ${token}`

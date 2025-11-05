@@ -57,8 +57,8 @@ export default function LoginPage() {
         localStorage.setItem('user', JSON.stringify(response.data.user))
         
         const role = response.data.user.role
-        if (role === 'admin') {
-          router.push('/admin')
+        if (role === 'regulator') {
+          router.push('/regulator')
         } else if (role === 'controller') {
           router.push('/compliance')
         } else {

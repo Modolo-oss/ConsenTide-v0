@@ -49,6 +49,42 @@ controllerRouter.post('/register', authenticateUser, requireAdmin, async (req: R
  * GET /api/v1/controllers/:controllerId
  * Get controller information
  */
+/**
+ * GET /api/v1/controllers/all
+ * List all controllers with stats (accessible by authenticated users)
+ */
+controllerRouter.get('/all', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const controllers = await supabaseControllerService.getAllControllers();
+    res.json({ controllers });
+  } catch (error: any) {
+    logger.error('Error listing controllers', { error: error.message });
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: error.message || 'Failed to list controllers',
+      timestamp: Date.now()
+    } as APIError);
+  }
+});
+
+/**
+ * GET /api/v1/controllers/stats
+ * Get overall controller statistics
+ */
+controllerRouter.get('/stats', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const stats = await supabaseControllerService.getControllerStats();
+    res.json(stats);
+  } catch (error: any) {
+    logger.error('Error getting controller stats', { error: error.message });
+    res.status(500).json({
+      code: 'INTERNAL_ERROR',
+      message: error.message || 'Failed to get controller stats',
+      timestamp: Date.now()
+    } as APIError);
+  }
+});
+
 controllerRouter.get('/:controllerId', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { controllerId } = req.params;

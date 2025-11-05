@@ -32,46 +32,64 @@ export default function CompliancePage() {
   const [controllers, setControllers] = useState<ControllerInfo[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
+  const [signedIn, setSignedIn] = useState(false)
+  const [isController, setIsController] = useState(false)
 
   useEffect(() => {
-    loadComplianceData()
+    const initAuth = async () => {
+      const token = localStorage.getItem('token')
+      const userStr = localStorage.getItem('user')
+      
+      if (!token || !userStr) {
+        setSignedIn(false)
+        setIsController(false)
+        setLoading(false)
+        return
+      }
+
+      try {
+        const user = JSON.parse(userStr)
+        setSignedIn(true)
+        setIsController(user.role === 'controller')
+        
+        if (user.role === 'controller') {
+          await loadComplianceData()
+        } else {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error)
+        setSignedIn(false)
+        setIsController(false)
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        setLoading(false)
+      }
+    }
+
+    initAuth()
   }, [])
 
   const loadComplianceData = async () => {
     try {
-      // Mock data for demo - in production this would come from API
-      setStats({
-        totalControllers: 47,
-        activeConsents: 12543,
-        complianceScore: 87.3,
-        lastUpdated: new Date().toISOString()
-      })
-
-      setControllers([
-        {
-          id: 'ctrl_001',
-          name: 'TechCorp Solutions',
-          complianceScore: 95,
-          totalConsents: 2341,
-          lastAudit: '2024-01-15'
-        },
-        {
-          id: 'ctrl_002',
-          name: 'DataFlow Inc',
-          complianceScore: 89,
-          totalConsents: 1876,
-          lastAudit: '2024-01-14'
-        },
-        {
-          id: 'ctrl_003',
-          name: 'PrivacyFirst Ltd',
-          complianceScore: 76,
-          totalConsents: 543,
-          lastAudit: '2024-01-13'
-        }
+      // Fetch real data from backend API
+      const [statsRes, controllersRes] = await Promise.all([
+        api.get('/controllers/stats'),
+        api.get('/controllers/all')
       ])
+
+      setStats(statsRes.data)
+      setControllers(controllersRes.data.controllers || [])
     } catch (error) {
       console.error('Failed to load compliance data:', error)
+      // Fallback to empty data on error
+      setStats({
+        totalControllers: 0,
+        activeConsents: 0,
+        complianceScore: 0,
+        lastUpdated: new Date().toISOString()
+      })
+      setControllers([])
     } finally {
       setLoading(false)
     }
@@ -81,6 +99,16 @@ export default function CompliancePage() {
     controller.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     controller.id.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  const handleSignOut = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
+  }
+
+  const handleSignIn = () => {
+    window.location.href = '/login'
+  }
 
   const getComplianceColor = (score: number) => {
     if (score >= 90) return 'text-green-600 bg-green-100'
@@ -106,22 +134,48 @@ export default function CompliancePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <EyeIcon className="h-8 w-8 text-blue-600" />
+              <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">GDPR Compliance Monitor</h1>
-                <p className="text-sm text-gray-600">Public transparency dashboard</p>
+                <h1 className="text-2xl font-bold text-gray-900">Controller Compliance Dashboard</h1>
+                <p className="text-sm text-gray-600">Manage your organization's GDPR compliance</p>
               </div>
             </div>
-            <div className="text-sm text-gray-600">
-              Last updated: {stats?.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'N/A'}
-            </div>
+            {signedIn ? (
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Sign out
+              </button>
+            ) : (
+              <button
+                onClick={handleSignIn}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                Sign in
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {!signedIn && (
+          <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
+            <p className="text-gray-700 mb-4">Sign in as a controller to view compliance dashboard.</p>
+            <button onClick={handleSignIn} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Sign in</button>
+          </div>
+        )}
+
+        {signedIn && !isController && (
+          <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
+            <p className="text-gray-700">You must be a controller to access this dashboard.</p>
+          </div>
+        )}
+
         {/* Overview Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {isController && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
@@ -268,21 +322,23 @@ export default function CompliancePage() {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start">
-            <ShieldCheckIcon className="h-6 w-6 text-blue-600 mt-0.5 mr-3" />
-            <div>
-              <h3 className="text-sm font-medium text-blue-900 mb-2">About This Dashboard</h3>
-              <p className="text-sm text-blue-700 mb-3">
-                This public compliance dashboard provides transparency into GDPR compliance across registered data controllers.
-                All data is updated in real-time and backed by immutable records on the Constellation Hypergraph.
-              </p>
-              <p className="text-xs text-blue-600">
-                For detailed compliance reports or regulatory access, please register as an auditor.
-              </p>
+        {isController && (
+          <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start">
+              <ShieldCheckIcon className="h-6 w-6 text-blue-600 mt-0.5 mr-3" />
+              <div>
+                <h3 className="text-sm font-medium text-blue-900 mb-2">About This Dashboard</h3>
+                <p className="text-sm text-blue-700 mb-3">
+                  This compliance dashboard helps controllers manage GDPR compliance across data processing activities.
+                  All data is updated in real-time and backed by immutable records on the Constellation Hypergraph.
+                </p>
+                <p className="text-xs text-blue-600">
+                  For regulatory oversight access, contact your compliance administrator.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   )

@@ -9,36 +9,37 @@ import {
 } from '@heroicons/react/24/outline'
 import { api } from '@/lib/api'
 import { ComplianceStatus } from '@/lib/types'
-import { createClient } from '@/lib/supabase'
 
-export default function AdminPage() {
+export default function RegulatorPage() {
   const [controllerHash, setControllerHash] = useState<string>('')
   const [compliance, setCompliance] = useState<ComplianceStatus | null>(null)
   const [report, setReport] = useState<any | null>(null)
   const [loading, setLoading] = useState(false)
   const [signedIn, setSignedIn] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isRegulator, setIsRegulator] = useState(false)
 
   useEffect(() => {
     const init = async () => {
-      const supabase = createClient()
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
-
-      if (!session) {
+      const token = localStorage.getItem('token')
+      const userStr = localStorage.getItem('user')
+      
+      if (!token || !userStr) {
         setSignedIn(false)
-        setIsAdmin(false)
+        setIsRegulator(false)
         return
       }
 
-      const token = session.access_token
-      if (token) {
-        localStorage.setItem('token', token)
+      try {
+        const user = JSON.parse(userStr)
+        setSignedIn(true)
+        setIsRegulator(user.role === 'regulator')
+      } catch (error) {
+        console.error('Failed to load user data:', error)
+        setSignedIn(false)
+        setIsRegulator(false)
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
       }
-
-      const role = (session.user.app_metadata?.role || session.user.user_metadata?.role || 'user') as string
-      setSignedIn(true)
-      setIsAdmin(role === 'admin')
     }
 
     init()
@@ -63,9 +64,14 @@ export default function AdminPage() {
     }
   }
 
-  const supabaseSignIn = async () => {
-    const supabase = createClient()
-    await supabase.auth.signInWithOAuth({ provider: 'github' })
+  const handleSignOut = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
+  }
+
+  const handleSignIn = () => {
+    window.location.href = '/login'
   }
 
   const getComplianceColor = (score: number) => {
@@ -79,9 +85,19 @@ export default function AdminPage() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center space-x-2">
-            <ShieldCheckIcon className="h-8 w-8 text-primary-600" />
-            <h1 className="text-2xl font-bold text-gray-900">consentire Admin Console</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <ShieldCheckIcon className="h-8 w-8 text-primary-600" />
+              <h1 className="text-2xl font-bold text-gray-900">ConsenTide Regulator Dashboard</h1>
+            </div>
+            {signedIn && (
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -89,14 +105,14 @@ export default function AdminPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {!signedIn && (
           <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
-            <p className="text-gray-700 mb-4">Sign in as an administrator to view compliance analytics.</p>
-            <button onClick={supabaseSignIn} className="bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-700 transition">Sign in</button>
+            <p className="text-gray-700 mb-4">Sign in as a regulator to view compliance analytics.</p>
+            <button onClick={handleSignIn} className="bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-700 transition">Sign in</button>
           </div>
         )}
 
-        {signedIn && !isAdmin && (
+        {signedIn && !isRegulator && (
           <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
-            <p className="text-gray-700">You must be an administrator to access this console.</p>
+            <p className="text-gray-700">You must be a regulator to access this dashboard.</p>
           </div>
         )}
 
@@ -113,7 +129,7 @@ export default function AdminPage() {
             />
             <button
               onClick={loadCompliance}
-              disabled={loading || !controllerHash || !isAdmin}
+              disabled={loading || !controllerHash || !isRegulator}
               className="bg-primary-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-primary-700 transition disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Check Compliance'}
@@ -122,7 +138,7 @@ export default function AdminPage() {
         </div>
 
         {/* Compliance Dashboard */}
-        {isAdmin && compliance && (
+        {isRegulator && compliance && (
           <div className="space-y-6">
             {/* Overall Score */}
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -226,7 +242,7 @@ export default function AdminPage() {
         )}
 
         {/* Empty State */}
-        {isAdmin && !compliance && !loading && (
+        {isRegulator && !compliance && !loading && (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
             <ChartBarIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Compliance Data</h3>

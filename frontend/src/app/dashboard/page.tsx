@@ -9,7 +9,6 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline'
 import { api } from '@/lib/api'
-import { createClient } from '@/lib/supabase'
 import {
   ConsentState,
   ConsentStatus,

@@ -1,6 +1,6 @@
 /**
- * Supabase-powered Consent Service
- * Replaces mock in-memory implementation with real database
+ * PostgreSQL-powered Consent Service
+ * Migrated from Supabase SDK to direct PostgreSQL queries
  */
 
 import {
@@ -12,7 +12,7 @@ import {
   ConsentRevokeResponse,
   ConsentStatus
 } from '@consentire/shared';
-import { supabaseAdmin, ConsentRecord, AuditLogRecord } from '../config/supabase';
+import { databaseService } from '../services/databaseService';
 import { realZKService } from './realZKService';
 import { realHGTPService } from './realHGTPService';
 import { 
@@ -23,16 +23,41 @@ import {
 } from '../utils/crypto';
 import { logger } from '../utils/logger';
 
+interface ConsentRecord {
+  consent_id: string;
+  user_id: string;
+  controller_hash: string;
+  purpose_hash: string;
+  data_categories: string[];
+  lawful_basis: string;
+  status: string;
+  granted_at: string;
+  revoked_at: string | null;
+  expires_at: string | null;
+  zk_proof: any;
+  hgtp_tx_hash: string | null;
+}
+
+interface AuditLogRecord {
+  id?: number;
+  consent_id?: string;
+  user_id?: string;
+  controller_hash?: string;
+  action: string;
+  details?: any;
+  hgtp_tx_hash?: string;
+  timestamp?: string;
+}
+
 class SupabaseConsentService {
   
   /**
-   * Grant consent with Supabase persistence
+   * Grant consent with PostgreSQL persistence
    */
   async grantConsent(request: ConsentGrantRequest, userId: string): Promise<ConsentGrantResponse> {
-    logger.info('Granting consent via Supabase', { userId, controllerId: request.controllerId });
+    logger.info('Granting consent via PostgreSQL', { userId, controllerId: request.controllerId });
 
     try {
-      // Generate hashes
       const controllerHash = generateControllerHash(request.controllerId);
       const purposeHash = generatePurposeHash(request.purpose);
       const timestamp = Date.now();
@@ -43,68 +68,63 @@ class SupabaseConsentService {
         timestamp
       );
 
-      // Check if consent already exists
-      const { data: existingConsent } = await supabaseAdmin
-        .from('consent_records')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('controller_hash', controllerHash)
-        .eq('purpose_hash', purposeHash)
-        .eq('status', 'granted')
-        .single();
+      const existingConsentResult = await databaseService.query(
+        `SELECT consent_id AS id FROM consents 
+         WHERE user_id = $1 
+         AND controller_hash = $2 
+         AND purpose_hash = $3 
+         AND status = $4`,
+        [userId, controllerHash, purposeHash, 'granted']
+      );
 
-      if (existingConsent) {
+      if (existingConsentResult.rows.length > 0) {
         throw new Error('Active consent already exists for this purpose');
       }
 
-      // Get controller info
-      const { data: controller } = await supabaseAdmin
-        .from('controllers')
-        .select('id')
-        .eq('organization_id', request.controllerId)
-        .single();
+      const controllerResult = await databaseService.query(
+        'SELECT id FROM controllers WHERE organization_id = $1',
+        [request.controllerId]
+      );
 
-      if (!controller) {
+      if (controllerResult.rows.length === 0) {
         throw new Error('Controller not found. Please register the organization first.');
       }
 
-      // Generate ZK proof
+      const controller = controllerResult.rows[0];
+
       const zkProof = await realZKService.generateConsentProof({
-        userId,
-        controllerId: request.controllerId,
-        purpose: request.purpose,
-        dataCategories: request.dataCategories,
-        lawfulBasis: request.lawfulBasis
+        controllerHash,
+        purposeHash,
+        timestamp: timestamp.toString(),
+        userId: hash(userId),
+        userSecret: hash(userId + request.lawfulBasis),
+        nonce: hash(timestamp.toString() + userId)
       });
 
-      // Create consent record
-      const consentRecord: Partial<ConsentRecord> = {
-        id: consentId,
-        user_id: userId,
-        controller_id: controller.id,
-        controller_hash: controllerHash,
-        purpose: request.purpose,
-        purpose_hash: purposeHash,
-        data_categories: request.dataCategories,
-        lawful_basis: request.lawfulBasis as any,
-        status: 'granted',
-        granted_at: new Date(timestamp).toISOString(),
-        expires_at: request.expiresAt ? new Date(request.expiresAt).toISOString() : null,
-        zk_proof: zkProof
-      };
+      const insertResult = await databaseService.query(
+        `INSERT INTO consents (
+          consent_id, user_id, controller_hash, purpose_hash,
+          data_categories, lawful_basis, status, granted_at, expires_at, zk_proof
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING *`,
+        [
+          consentId,
+          userId,
+          controllerHash,
+          purposeHash,
+          request.dataCategories,
+          request.lawfulBasis,
+          'granted',
+          new Date(timestamp).toISOString(),
+          request.expiresAt ? new Date(request.expiresAt).toISOString() : null,
+          JSON.stringify(zkProof)
+        ]
+      );
 
-      // Insert consent record
-      const { data: insertedConsent, error: insertError } = await supabaseAdmin
-        .from('consent_records')
-        .insert(consentRecord)
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error(`Failed to insert consent: ${insertError.message}`);
+      if (insertResult.rows.length === 0) {
+        throw new Error('Failed to insert consent');
       }
 
-      // Anchor to HGTP (real implementation)
       const hgtpResult = await realHGTPService.anchorConsent({
         consentId,
         controllerHash,
@@ -116,17 +136,15 @@ class SupabaseConsentService {
         userId: hash(userId)
       });
 
-      // Update with HGTP transaction hash
-      await supabaseAdmin
-        .from('consent_records')
-        .update({ hgtp_tx_hash: hgtpResult.transactionHash })
-        .eq('id', consentId);
+      await databaseService.query(
+        'UPDATE consents SET hgtp_tx_hash = $1 WHERE consent_id = $2',
+        [hgtpResult.transactionHash, consentId]
+      );
 
-      // Create audit log
       await this.createAuditLog({
         consent_id: consentId,
         user_id: userId,
-        controller_id: controller.id,
+        controller_hash: controller.id,
         action: 'consent_granted',
         details: {
           purpose: request.purpose,
@@ -159,7 +177,7 @@ class SupabaseConsentService {
    * Verify consent with ZK proof (no personal data exposure)
    */
   async verifyConsent(request: ConsentVerifyRequest): Promise<ConsentVerifyResponse> {
-    logger.info('Verifying consent via Supabase', { 
+    logger.info('Verifying consent via PostgreSQL', { 
       userId: request.userId, 
       controllerId: request.controllerId 
     });
@@ -168,29 +186,28 @@ class SupabaseConsentService {
       const controllerHash = generateControllerHash(request.controllerId);
       const purposeHash = generatePurposeHash(request.purpose);
 
-      // Find consent record
-      const { data: consentRecord, error } = await supabaseAdmin
-        .from('consent_records')
-        .select('*')
-        .eq('user_id', request.userId)
-        .eq('controller_hash', controllerHash)
-        .eq('purpose_hash', purposeHash)
-        .single();
+      const consentResult = await databaseService.query(
+        `SELECT * FROM consents 
+         WHERE user_id = $1 
+         AND controller_hash = $2 
+         AND purpose_hash = $3`,
+        [request.userId, controllerHash, purposeHash]
+      );
 
-      if (error || !consentRecord) {
+      if (consentResult.rows.length === 0) {
         return {
           isValid: false,
           error: 'Consent not found'
         };
       }
 
-      // Check expiration
+      const consentRecord = consentResult.rows[0];
+
       if (consentRecord.expires_at && new Date() > new Date(consentRecord.expires_at)) {
-        // Auto-expire the consent
-        await supabaseAdmin
-          .from('consent_records')
-          .update({ status: 'expired' })
-          .eq('id', consentRecord.id);
+        await databaseService.query(
+          'UPDATE consents SET status = $1 WHERE id = $2',
+          ['expired', consentRecord.consent_id]
+        );
 
         return {
           isValid: false,
@@ -199,7 +216,6 @@ class SupabaseConsentService {
         };
       }
 
-      // Check status
       if (consentRecord.status !== 'granted') {
         return {
           isValid: false,
@@ -208,21 +224,17 @@ class SupabaseConsentService {
         };
       }
 
-  	  // Generate ZK proof for verification
-  	  const zkProof = await realZKService.generateVerificationProof(
-  	    consentRecord.controller_hash,
-  	    consentRecord.purpose_hash,
-  	    true,
-  	    new Date(consentRecord.granted_at).getTime()
-  	  );
+      const zkProof = await realZKService.generateVerificationProof(
+        consentRecord.controller_hash,
+        consentRecord.purpose_hash,
+        true,
+        new Date(consentRecord.granted_at).getTime()
+      );
 
+      const merkleProof = await realHGTPService.getMerkleProof(consentRecord.consent_id);
 
-      // Generate merkle proof from HGTP
-      const merkleProof = await realHGTPService.getMerkleProof(consentRecord.id);
-
-      // Create audit log for verification
       await this.createAuditLog({
-        consent_id: consentRecord.id,
+        consent_id: consentRecord.consent_id,
         user_id: request.userId,
         action: 'consent_verified',
         details: {
@@ -232,13 +244,13 @@ class SupabaseConsentService {
       });
 
       logger.info('Consent verified successfully', { 
-        consentId: consentRecord.id, 
+        consentId: consentRecord.consent_id, 
         isValid: true 
       });
 
       return {
         isValid: true,
-        consentId: consentRecord.id,
+        consentId: consentRecord.consent_id,
         zkProof,
         merkleProof,
         status: ConsentStatus.GRANTED
@@ -257,20 +269,19 @@ class SupabaseConsentService {
    * Revoke consent
    */
   async revokeConsent(request: ConsentRevokeRequest, userId: string): Promise<ConsentRevokeResponse> {
-    logger.info('Revoking consent via Supabase', { consentId: request.consentId, userId });
+    logger.info('Revoking consent via PostgreSQL', { consentId: request.consentId, userId });
 
     try {
-      // Get consent record
-      const { data: consentRecord, error } = await supabaseAdmin
-        .from('consent_records')
-        .select('*')
-        .eq('id', request.consentId)
-        .eq('user_id', userId)
-        .single();
+      const consentResult = await databaseService.query(
+        'SELECT * FROM consents WHERE id = $1 AND user_id = $2',
+        [request.consentId, userId]
+      );
 
-      if (error || !consentRecord) {
+      if (consentResult.rows.length === 0) {
         throw new Error('Consent not found or access denied');
       }
+
+      const consentRecord = consentResult.rows[0];
 
       if (consentRecord.status !== 'granted') {
         throw new Error(`Cannot revoke consent with status: ${consentRecord.status}`);
@@ -278,32 +289,27 @@ class SupabaseConsentService {
 
       const revokedAt = Date.now();
 
-      // Update consent status
-      const { error: updateError } = await supabaseAdmin
-        .from('consent_records')
-        .update({ 
-          status: 'revoked',
-          revoked_at: new Date(revokedAt).toISOString()
-        })
-        .eq('id', request.consentId);
+      const updateResult = await databaseService.query(
+        `UPDATE consent_records 
+         SET status = $1, revoked_at = $2 
+         WHERE id = $3`,
+        ['revoked', new Date(revokedAt).toISOString(), request.consentId]
+      );
 
-      if (updateError) {
-        throw new Error(`Failed to revoke consent: ${updateError.message}`);
+      if (updateResult.rowCount === 0) {
+        throw new Error('Failed to revoke consent');
       }
 
-      // Update HGTP
       const hgtpResult = await realHGTPService.updateConsentStatus(
         request.consentId, 
         ConsentStatus.REVOKED
       );
 
-      // Update HGTP transaction hash
-      await supabaseAdmin
-        .from('consent_records')
-        .update({ hgtp_tx_hash: hgtpResult.transactionHash })
-        .eq('id', request.consentId);
+      await databaseService.query(
+        'UPDATE consents SET hgtp_tx_hash = $1 WHERE consent_id = $2',
+        [hgtpResult.transactionHash, request.consentId]
+      );
 
-      // Create audit log
       await this.createAuditLog({
         consent_id: request.consentId,
         user_id: userId,
@@ -336,26 +342,18 @@ class SupabaseConsentService {
   /**
    * Get user's active consents
    */
-  async getActiveConsents(userId: string): Promise<ConsentRecord[]> {
+  async getActiveConsents(userId: string): Promise<any[]> {
     try {
-      const { data: consents, error } = await supabaseAdmin
-        .from('consent_records')
-        .select(`
-          *,
-          controllers (
-            organization_name,
-            organization_id
-          )
-        `)
-        .eq('user_id', userId)
-        .eq('status', 'granted')
-        .order('granted_at', { ascending: false });
+      const result = await databaseService.query(
+        `SELECT *
+         FROM consents
+         WHERE user_id = $1 
+         AND status = $2
+         ORDER BY granted_at DESC`,
+        [userId, 'granted']
+      );
 
-      if (error) {
-        throw new Error(`Failed to fetch consents: ${error.message}`);
-      }
-
-      return consents || [];
+      return result.rows;
     } catch (error) {
       logger.error('Failed to get active consents', { error, userId });
       throw error;
@@ -367,18 +365,21 @@ class SupabaseConsentService {
    */
   private async createAuditLog(logData: Partial<AuditLogRecord>): Promise<void> {
     try {
-      const { error } = await supabaseAdmin
-        .from('audit_logs')
-        .insert({
-          ...logData,
-          created_at: new Date().toISOString()
-        });
-
-      if (error) {
-        logger.error('Failed to create audit log', { error, logData });
-      }
+      await databaseService.query(
+        `INSERT INTO audit_logs (consent_id, user_id, controller_hash, action, details, hgtp_tx_hash, timestamp)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          logData.consent_id || null,
+          logData.user_id || null,
+          logData.controller_hash || null,
+          logData.action,
+          JSON.stringify(logData.details || {}),
+          logData.hgtp_tx_hash || null,
+          new Date().toISOString()
+        ]
+      );
     } catch (error) {
-      logger.error('Audit log creation error', { error });
+      logger.error('Failed to create audit log', { error, logData });
     }
   }
 
@@ -387,27 +388,27 @@ class SupabaseConsentService {
    */
   async getComplianceMetrics(controllerHash: string) {
     try {
-      const { data, error } = await supabaseAdmin
-        .rpc('calculate_compliance_score', { controller_hash_param: controllerHash });
+      const countsResult = await databaseService.query(
+        'SELECT status FROM consents WHERE controller_hash = $1',
+        [controllerHash]
+      );
 
-      if (error) {
-        throw new Error(`Failed to calculate compliance: ${error.message}`);
+      const counts = countsResult.rows;
+      const totalConsents = counts.length;
+      const activeConsents = counts.filter((c: any) => c.status === 'granted').length;
+      const revokedConsents = counts.filter((c: any) => c.status === 'revoked').length;
+      const expiredConsents = counts.filter((c: any) => c.status === 'expired').length;
+
+      let complianceScore = 100;
+      if (totalConsents > 0) {
+        const revokedRate = (revokedConsents / totalConsents) * 100;
+        const expiredRate = (expiredConsents / totalConsents) * 100;
+        complianceScore = Math.max(0, 100 - (revokedRate * 0.5) - (expiredRate * 0.3));
       }
-
-      // Get detailed counts
-      const { data: counts } = await supabaseAdmin
-        .from('consent_records')
-        .select('status')
-        .eq('controller_hash', controllerHash);
-
-      const totalConsents = counts?.length || 0;
-      const activeConsents = counts?.filter(c => c.status === 'granted').length || 0;
-      const revokedConsents = counts?.filter(c => c.status === 'revoked').length || 0;
-      const expiredConsents = counts?.filter(c => c.status === 'expired').length || 0;
 
       return {
         controllerHash,
-        complianceScore: data || 100,
+        complianceScore: Math.round(complianceScore),
         totalConsents,
         activeConsents,
         revokedConsents,
@@ -425,47 +426,45 @@ class SupabaseConsentService {
    */
   async getComplianceReport(controllerHash: string) {
     try {
-      const { data: controller, error: controllerError } = await supabaseAdmin
-        .from('controllers')
-        .select('*')
-        .eq('controller_hash', controllerHash)
-        .single();
+      const controllerResult = await databaseService.query(
+        'SELECT * FROM controllers WHERE controller_hash = $1',
+        [controllerHash]
+      );
 
-      if (controllerError || !controller) {
+      if (controllerResult.rows.length === 0) {
         throw new Error('Controller not found');
       }
 
+      const controller = controllerResult.rows[0];
       const metrics = await this.getComplianceMetrics(controllerHash);
 
-      const { data: consents, error: consentError } = await supabaseAdmin
-        .from('consent_records')
-        .select('*')
-        .eq('controller_hash', controllerHash)
-        .order('granted_at', { ascending: false })
-        .limit(200);
+      const consentsResult = await databaseService.query(
+        `SELECT * FROM consents 
+         WHERE controller_hash = $1 
+         ORDER BY granted_at DESC 
+         LIMIT 200`,
+        [controllerHash]
+      );
 
-      if (consentError) {
-        throw new Error(`Failed to load consent records: ${consentError.message}`);
-      }
+      const consents = consentsResult.rows;
 
-      const { data: auditLogs, error: auditError } = await supabaseAdmin
-        .from('audit_logs')
-        .select('*')
-        .eq('controller_id', controller.id)
-        .order('created_at', { ascending: false })
-        .limit(200);
+      const auditLogsResult = await databaseService.query(
+        `SELECT * FROM audit_logs 
+         WHERE controller_id = $1 
+         ORDER BY created_at DESC 
+         LIMIT 200`,
+        [controller.id]
+      );
 
-      if (auditError) {
-        throw new Error(`Failed to load audit logs: ${auditError.message}`);
-      }
+      const auditLogs = auditLogsResult.rows;
 
       const statusCounts = {
-        granted: consents?.filter(c => c.status === 'granted').length || 0,
-        revoked: consents?.filter(c => c.status === 'revoked').length || 0,
-        expired: consents?.filter(c => c.status === 'expired').length || 0
+        granted: consents.filter((c: any) => c.status === 'granted').length,
+        revoked: consents.filter((c: any) => c.status === 'revoked').length,
+        expired: consents.filter((c: any) => c.status === 'expired').length
       };
 
-      const recentConsents = (consents || []).slice(0, 25).map(record => ({
+      const recentConsents = consents.slice(0, 25).map((record: any) => ({
         consentId: record.id,
         purpose: record.purpose,
         status: record.status,
@@ -477,7 +476,7 @@ class SupabaseConsentService {
         dataCategories: record.data_categories
       }));
 
-      const recentAuditLogs = (auditLogs || []).slice(0, 50).map(log => ({
+      const recentAuditLogs = auditLogs.slice(0, 50).map((log: any) => ({
         id: log.id,
         action: log.action,
         consentId: log.consent_id,
