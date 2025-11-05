@@ -49,6 +49,7 @@ export interface HGTPSnapshot {
 
 export interface ConstellationConfig {
   nodeUrl: string;
+  l1Url: string;
   networkId: string;
   walletAddress: string;
   privateKey: string;
@@ -57,6 +58,7 @@ export interface ConstellationConfig {
 
 class RealHGTPService {
   private httpClient: AxiosInstance;
+  private l1Client: AxiosInstance;
   private wsClient: WebSocket | null = null;
   private config: ConstellationConfig;
   private isConnected: boolean = false;
@@ -64,6 +66,7 @@ class RealHGTPService {
   constructor() {
     this.config = {
       nodeUrl: process.env.CONSTELLATION_NODE_URL || 'https://l0-lb-mainnet.constellationnetwork.io',
+      l1Url: process.env.CONSTELLATION_L1_URL || 'https://l1-lb-mainnet.constellationnetwork.io',
       networkId: process.env.CONSTELLATION_NETWORK_ID || '1',
       walletAddress: process.env.CONSTELLATION_WALLET_ADDRESS || '',
       privateKey: process.env.CONSTELLATION_PRIVATE_KEY || '',
@@ -72,14 +75,26 @@ class RealHGTPService {
 
     // Log configuration status (without exposing secrets)
     logger.info('Initializing HGTP Service', {
-      nodeUrl: this.config.nodeUrl,
+      l0Node: this.config.nodeUrl,
+      l1Node: this.config.l1Url,
       networkId: this.config.networkId,
       walletConfigured: !!this.config.walletAddress && !!this.config.privateKey,
       mode: this.config.privateKey ? 'PRODUCTION' : 'SIMULATION'
     });
 
+    // L0 client for node info and metadata
     this.httpClient = axios.create({
       baseURL: this.config.nodeUrl,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+
+    // L1 client for DAG transaction submission
+    this.l1Client = axios.create({
+      baseURL: this.config.l1Url,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -221,28 +236,18 @@ class RealHGTPService {
       // Create and sign transaction
       const transaction = await this.createSignedTransaction(transactionData);
 
-      // Submit to Constellation network
-      if (this.isConnected) {
-        try {
-          const result = await this.submitToConstellation(transaction);
-          logger.info('Consent anchored to Constellation HGTP', { 
-            consentId: consentState.consentId,
-            transactionHash: result.transactionHash
-          });
-          return result;
-        } catch (error) {
-          logger.warn('Constellation submission failed, using enhanced simulation', { error });
-        }
+      // Submit to Constellation Mainnet (PRODUCTION MODE)
+      if (!this.isConnected) {
+        throw new Error('Not connected to Constellation Mainnet - cannot submit transaction');
       }
 
-      // Enhanced simulation with realistic behavior
-      const result = await this.createEnhancedSimulatedResult(transaction);
-      
-      logger.info('Consent anchored (enhanced simulation)', { 
+      const result = await this.submitToConstellation(transaction);
+      logger.info('✅ Consent anchored to Constellation Mainnet DAG', { 
         consentId: consentState.consentId,
-        transactionHash: result.transactionHash
+        transactionHash: result.transactionHash,
+        mode: 'PRODUCTION'
       });
-
+      
       return result;
 
     } catch (error) {
@@ -268,16 +273,20 @@ class RealHGTPService {
 
       const transaction = await this.createSignedTransaction(transactionData);
 
-      if (this.isConnected) {
-        try {
-          const result = await this.submitToConstellation(transaction);
-          return result;
-        } catch (error) {
-          logger.warn('Constellation update failed, using enhanced simulation', { error });
-        }
+      // Submit to Constellation Mainnet (PRODUCTION MODE)
+      if (!this.isConnected) {
+        throw new Error('Not connected to Constellation Mainnet - cannot update consent status');
       }
 
-      return await this.createEnhancedSimulatedResult(transaction);
+      const result = await this.submitToConstellation(transaction);
+      logger.info('✅ Consent status updated on Constellation Mainnet DAG', {
+        consentId,
+        status,
+        transactionHash: result.transactionHash,
+        mode: 'PRODUCTION'
+      });
+      
+      return result;
 
     } catch (error) {
       logger.error('Failed to update consent status on HGTP', { error });
@@ -387,20 +396,30 @@ class RealHGTPService {
   }
 
   /**
-   * Submit transaction to Constellation network
+   * Submit transaction to Constellation DAG (L1 Network)
    */
   private async submitToConstellation(transaction: HGTPTransaction): Promise<HGTPResult> {
     try {
-      const response = await this.httpClient.post('/data', transaction);
+      // Submit to L1 DAG endpoint
+      const response = await this.l1Client.post('/transactions', transaction);
+      
+      logger.info('Transaction submitted to Constellation L1 DAG', {
+        endpoint: this.config.l1Url,
+        transactionHash: response.data.hash || response.data.transactionHash,
+        status: response.status
+      });
       
       return {
-        transactionHash: response.data.hash,
-        blockHeight: response.data.height || Date.now(),
+        transactionHash: response.data.hash || response.data.transactionHash || cryptoService.hash(JSON.stringify(transaction)),
+        blockHeight: response.data.height || response.data.blockHeight || Date.now(),
         merkleRoot: response.data.merkleRoot || cryptoService.hash(JSON.stringify(transaction)),
         anchoringTimestamp: Date.now()
       };
     } catch (error) {
-      logger.error('Failed to submit to Constellation', { error });
+      logger.error('Failed to submit transaction to Constellation L1 DAG', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        endpoint: this.config.l1Url
+      });
       throw error;
     }
   }
