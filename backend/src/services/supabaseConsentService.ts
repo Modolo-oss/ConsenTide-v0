@@ -137,8 +137,8 @@ class SupabaseConsentService {
       });
 
       await databaseService.query(
-        'UPDATE consents SET hgtp_tx_hash = $1 WHERE consent_id = $2',
-        [hgtpResult.transactionHash, consentId]
+        'UPDATE consents SET hgtp_tx_hash = $1, anchoring_timestamp = $2 WHERE consent_id = $3',
+        [hgtpResult.transactionHash, new Date(hgtpResult.anchoringTimestamp).toISOString(), consentId]
       );
 
       await this.createAuditLog({
@@ -205,7 +205,7 @@ class SupabaseConsentService {
 
       if (consentRecord.expires_at && new Date() > new Date(consentRecord.expires_at)) {
         await databaseService.query(
-          'UPDATE consents SET status = $1 WHERE id = $2',
+          'UPDATE consents SET status = $1 WHERE consent_id = $2',
           ['expired', consentRecord.consent_id]
         );
 
@@ -273,7 +273,7 @@ class SupabaseConsentService {
 
     try {
       const consentResult = await databaseService.query(
-        'SELECT * FROM consents WHERE id = $1 AND user_id = $2',
+        'SELECT * FROM consents WHERE consent_id = $1 AND user_id = $2',
         [request.consentId, userId]
       );
 
@@ -289,26 +289,27 @@ class SupabaseConsentService {
 
       const revokedAt = Date.now();
 
-      const updateResult = await databaseService.query(
-        `UPDATE consent_records 
-         SET status = $1, revoked_at = $2 
-         WHERE id = $3`,
-        ['revoked', new Date(revokedAt).toISOString(), request.consentId]
-      );
-
-      if (updateResult.rowCount === 0) {
-        throw new Error('Failed to revoke consent');
-      }
-
       const hgtpResult = await realHGTPService.updateConsentStatus(
         request.consentId, 
         ConsentStatus.REVOKED
       );
 
-      await databaseService.query(
-        'UPDATE consents SET hgtp_tx_hash = $1 WHERE consent_id = $2',
-        [hgtpResult.transactionHash, request.consentId]
+      const updateResult = await databaseService.query(
+        `UPDATE consents 
+         SET status = $1, updated_at = $2, hgtp_tx_hash = $3, anchoring_timestamp = $4
+         WHERE consent_id = $5`,
+        [
+          'revoked', 
+          new Date(revokedAt).toISOString(), 
+          hgtpResult.transactionHash,
+          new Date(hgtpResult.anchoringTimestamp).toISOString(),
+          request.consentId
+        ]
       );
+
+      if (updateResult.rowCount === 0) {
+        throw new Error('Failed to revoke consent');
+      }
 
       await this.createAuditLog({
         consent_id: request.consentId,

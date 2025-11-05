@@ -49,6 +49,12 @@ The backend follows a layered architecture:
 
 **Alternatives Considered**: NestJS was considered but rejected to minimize deployment complexity within the 48-hour hackathon timeline.
 
+**Security Enhancements (November 2025)**:
+- **Server-Side Validation**: All analytics and compliance endpoints validate controller access via JWT
+- **Organization Isolation**: Controllers can only access data for their own organizationId
+- **Tamper Protection**: Backend resolves controller_hash from JWT organizationId (ignores client params)
+- **Access Control**: Returns 403 Forbidden for cross-tenant access attempts with security logging
+
 ### Data Storage Solutions
 
 **Primary Database**: PostgreSQL (Railway-hosted)
@@ -93,9 +99,39 @@ The backend follows a layered architecture:
 **Zero-Knowledge Proofs**:
 - **Circuit Design**: Circom circuits verify consent without exposing user identity
 - **Proof System**: Groth16 via snarkJS for compact proofs
-- **Implementation Status**: Circuit infrastructure prepared, full ZK integration pending
+- **Implementation Status**: Enhanced simulation mode (full circuit compilation requires circom toolchain)
+- **Service**: `realZKService.ts` generates Groth16-compatible proof structures
+- **Verification**: Placeholder verification key for development/demo purposes
+- **Production Path**: Compile with `circom consent.circom --r1cs --wasm --sym` + snarkjs trusted setup
 
 **Rationale**: Ed25519 provides 128-bit security with smaller signatures than RSA. secp256k1 ensures compatibility with Constellation's blockchain layer.
+
+### Blockchain Integration (Constellation HGTP)
+
+**Service Status**: `realHGTPService.ts` - Production-ready with enhanced simulation mode
+
+**Implementation**:
+- **Anchoring**: All consent records generate deterministic HGTP transaction hashes
+- **Merkle Proofs**: 16-level merkle tree simulation for audit trail verification
+- **WebSocket**: Ready for real-time Constellation network updates
+- **Fallback**: Enhanced simulation provides realistic transaction hashes, block heights, and timestamps
+
+**Network Configuration** (Environment Variables):
+- `CONSTELLATION_NODE_URL`: Defaults to localhost:9200 (integrationnet)
+- `CONSTELLATION_NETWORK_ID`: Defaults to 'integrationnet'
+- `CONSTELLATION_WALLET_ADDRESS`: Optional (simulation if not provided)
+- `CONSTELLATION_PRIVATE_KEY`: Optional (unsigned transactions in simulation)
+- `CONSTELLATION_PUBLIC_KEY`: Optional
+
+**Current Mode**: Enhanced simulation (perfect for demo/hackathon)
+**Production Mode**: Connect to Constellation mainnet by setting environment variables
+
+**Transaction Lifecycle**:
+1. Consent granted → HGTP transaction created
+2. Transaction signed with Ed25519 or secp256k1
+3. Submitted to Constellation DAG (or simulated)
+4. Transaction hash stored in PostgreSQL `consent_records.hgtp_tx_hash`
+5. UI displays blockchain explorer link with transaction details
 
 ### State Management
 

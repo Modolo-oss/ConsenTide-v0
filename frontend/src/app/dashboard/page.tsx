@@ -85,7 +85,7 @@ export default function Dashboard() {
       const response = await api.get(`/consent/user/me`)
       const rows = response.data.consents || []
       const mapped: ConsentState[] = rows.map((r: any) => ({
-        consentId: r.id,
+        consentId: r.consent_id,
         controllerHash: r.controller_hash,
         purposeHash: r.purpose_hash,
         status: r.status,
@@ -93,6 +93,7 @@ export default function Dashboard() {
         expiresAt: r.expires_at ? new Date(r.expires_at).getTime() : undefined,
         hgtpTxHash: r.hgtp_tx_hash || '',
         userId: r.user_id,
+        anchoringTimestamp: r.anchoring_timestamp ? new Date(r.anchoring_timestamp).getTime() : undefined
       }))
       setConsents(mapped)
     } catch (error) {
@@ -670,7 +671,31 @@ function ConsentCard({
             {consent.expiresAt && (
               <p><strong>Expires:</strong> {formatDate(consent.expiresAt)}</p>
             )}
-            <p><strong>HGTP TX Hash:</strong> {consent.hgtpTxHash?.substring(0, 16) || 'N/A'}...</p>
+            {consent.hgtpTxHash && (
+              <div className="flex items-center gap-2 mt-3 p-2 bg-blue-50 rounded border border-blue-200">
+                <DocumentTextIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-blue-900 mb-0.5">Blockchain Anchored</p>
+                  <a 
+                    href={`#/explorer/${consent.hgtpTxHash}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      const anchorTime = consent.anchoringTimestamp ? formatDate(consent.anchoringTimestamp) : formatDate(consent.grantedAt)
+                      alert(`Constellation HGTP Explorer\n\nTransaction Hash: ${consent.hgtpTxHash}\n\nStatus: Confirmed\nNetwork: IntegrationNet\nAnchored: ${anchorTime}\n\nNote: Running in enhanced simulation mode for demo purposes`)
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-mono truncate block"
+                    title={consent.hgtpTxHash}
+                  >
+                    {consent.hgtpTxHash.substring(0, 20)}...
+                  </a>
+                  {consent.anchoringTimestamp && (
+                    <p className="text-xs text-gray-600 mt-1">
+                      Anchored: {formatDate(consent.anchoringTimestamp)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         {consent.status === ConsentStatus.GRANTED && (

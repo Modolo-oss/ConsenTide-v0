@@ -23,6 +23,7 @@ export interface ConsentState {
   expiresAt?: number;
   hgtpTxHash: string;
   userId: string;
+  anchoringTimestamp?: number;
 }
 
 export interface ConsentGrantRequest {
