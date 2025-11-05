@@ -53,11 +53,9 @@ export default function LoginPage() {
       })
 
       if (response.data.success) {
-        // Store token and user info
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
         
-        // Redirect based on role
         const role = response.data.user.role
         if (role === 'admin') {
           router.push('/admin')
@@ -66,6 +64,8 @@ export default function LoginPage() {
         } else {
           router.push('/dashboard')
         }
+      } else {
+        setErrors({ general: response.data.message || 'Login failed' })
       }
     } catch (error: any) {
       console.error('Login error:', error)
@@ -112,30 +112,30 @@ export default function LoginPage() {
           </div>
           <div className="space-y-2">
             <button
-              onClick={() => fillDemoCredentials('admin@consentire.com', 'admin123')}
+              onClick={() => fillDemoCredentials('admin@consentire.io', 'admin123')}
               className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
             >
               <div className="flex justify-between items-center">
                 <span className="font-medium text-blue-900">👤 Admin</span>
-                <span className="text-blue-700">admin@consentire.com / admin123</span>
+                <span className="text-blue-700">admin@consentire.io / admin123</span>
               </div>
             </button>
             <button
-              onClick={() => fillDemoCredentials('demo@consentire.com', 'demo123')}
+              onClick={() => fillDemoCredentials('user@consentire.io', 'user123')}
               className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
             >
               <div className="flex justify-between items-center">
                 <span className="font-medium text-blue-900">👥 User</span>
-                <span className="text-blue-700">demo@consentire.com / demo123</span>
+                <span className="text-blue-700">user@consentire.io / user123</span>
               </div>
             </button>
             <button
-              onClick={() => fillDemoCredentials('controller@consentire.com', 'controller123')}
+              onClick={() => fillDemoCredentials('org@consentire.io', 'org123')}
               className="w-full text-left p-2 rounded hover:bg-blue-100 transition text-sm"
             >
               <div className="flex justify-between items-center">
                 <span className="font-medium text-blue-900">🏢 Controller</span>
-                <span className="text-blue-700">controller@consentire.com / controller123</span>
+                <span className="text-blue-700">org@consentire.io / org123</span>
               </div>
             </button>
           </div>

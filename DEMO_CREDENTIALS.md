@@ -16,6 +16,10 @@ Perfect for testing user-facing features like consent management, viewing grante
 ```
 Email:    demo@consentire.com
 Password: demo123
+
+Alternative:
+Email:    user@consentire.io
+Password: user123
 ```
 
 **What you can do:**
@@ -31,6 +35,10 @@ Full access to system administration, analytics, and compliance monitoring.
 
 ```
 Email:    admin@consentire.com
+Password: admin123
+
+Alternative:
+Email:    admin@consentire.io
 Password: admin123
 ```
 
@@ -49,6 +57,10 @@ Test the organization/controller perspective for managing consent requests and d
 ```
 Email:    controller@consentire.com
 Password: controller123
+
+Alternative:
+Email:    org@consentire.io
+Password: org123
 ```
 
 **What you can do:**
@@ -58,8 +70,25 @@ Password: controller123
 - Monitor consent status
 - Generate GDPR compliance reports
 
-**Organization:** Demo Corporation  
+**Organization:** Demo Corporation / Demo Organization IO  
 **Organization ID:** Auto-generated
+
+---
+
+### 🔬 Regulator Account
+Special access for regulatory oversight and compliance auditing.
+
+```
+Email:    regulator@consentire.io
+Password: reg123
+```
+
+**What you can do:**
+- Access regulatory dashboard
+- Audit compliance across all organizations
+- View system-wide consent metrics
+- Generate compliance reports
+- Monitor data processing activities
 
 ---
 
@@ -87,7 +116,7 @@ Password: user123
 2. **Login**
    - Click "Login" or navigate to `/login`
    - Enter any of the credentials above
-   - You'll be redirected to the appropriate dashboard
+   - You'll be redirected to the appropriate dashboard based on your role
 
 3. **Explore Features**
    - Each account type has different views and capabilities
@@ -127,8 +156,8 @@ Password: user123
 ## 📊 Sample Data
 
 The database is pre-seeded with:
-- ✅ 5 demo user accounts
-- ✅ 1 controller organization (Demo Corporation)
+- ✅ 9 demo user accounts (.com and .io domains)
+- ✅ 2 controller organizations
 - ✅ Sample consent records
 - ✅ Audit trail entries
 
@@ -137,9 +166,11 @@ The database is pre-seeded with:
 ## 🛠️ Technical Details
 
 **Database:** PostgreSQL (Replit native)  
-**Authentication:** JWT-based  
+**Authentication:** JWT-based with bcrypt hashing  
 **Password Hashing:** bcrypt (10 rounds)  
-**Session Duration:** 24 hours
+**Session Duration:** 24 hours  
+**API Base URL:** http://localhost:3001/api/v1  
+**Frontend Port:** 5000
 
 ---
 
@@ -163,15 +194,42 @@ This application is configured to work seamlessly with PostgreSQL and can be eas
    - Import data.sql
    - Update DATABASE_URL environment variable
 
+See `RAILWAY_MIGRATION_GUIDE.md` for detailed instructions.
+
+---
+
+## 🧪 Testing the Login Flow
+
+You can test the login API directly:
+
+```bash
+# Test admin login
+curl -X POST http://localhost:3001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@consentire.io","password":"admin123"}'
+
+# Expected response:
+# {
+#   "success": true,
+#   "token": "eyJhbGc...",
+#   "user": {
+#     "id": "user_...",
+#     "email": "admin@consentire.io",
+#     "role": "admin",
+#     "did": "did:consentire:..."
+#   }
+# }
+```
+
 ---
 
 ## 📞 Support
 
 If you encounter any issues:
-- Check the application logs
+- Check the application logs in Replit console
 - Verify database connection
-- Ensure all environment variables are set
-- Contact the development team
+- Ensure all environment variables are set (JWT_SECRET, DATABASE_URL)
+- Check that both backend (port 3001) and frontend (port 5000) are running
 
 ---
 
