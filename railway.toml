@@ -1,42 +1,21 @@
-# ConsenTide Railway Configuration
-# Frontend Service
-[build]
-builder = "nixpacks"
-
-[deploy]
-healthcheckPath = "/health"
-healthcheckTimeout = 300
-restartPolicyType = "always"
+# ConsenTide - Simple Railway Deployment
 
 # Backend Service
 [[services]]
-name = "consentire-backend"
+name = "backend"
 source = "backend"
 
 [services.variables]
 PORT = "3001"
-DATABASE_URL = "${{DATABASE_URL}}"
-REDIS_URL = "${{REDIS_URL}}"
-METAGRAPH_L0_URL = "${{METAGRAPH_URL}}"
-JWT_SECRET = "${{JWT_SECRET}}"
 NODE_ENV = "production"
+JWT_SECRET = "${{JWT_SECRET}}"
+DATABASE_URL = "${{DATABASE_URL}}"
 
-# Frontend Service  
+# Frontend Service
 [[services]]
-name = "consentire-frontend"
+name = "frontend" 
 source = "frontend"
 
 [services.variables]
 NEXT_PUBLIC_API_URL = "${{BACKEND_URL}}"
-NEXT_PUBLIC_METAGRAPH_URL = "${{METAGRAPH_URL}}"
 NEXT_PUBLIC_ENV = "production"
-
-# PostgreSQL Service
-[[services]]
-name = "postgres"
-source = "postgres:15"
-
-[services.variables]
-POSTGRES_DB = "consentire_prod"
-POSTGRES_USER = "consentire"
-POSTGRES_PASSWORD = "${{POSTGRES_PASSWORD}}"
