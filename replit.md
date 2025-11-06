@@ -15,6 +15,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 2025)
 
+- **✅ Production API Proxy** - Fixed frontend-backend communication in Replit Autoscale deployment
+  - Created Next.js API proxy route at `/api/proxy/[...path]/route.ts`
+  - Auto-detects environment: localhost → direct backend, production → internal proxy
+  - Removed dependency on NEXT_PUBLIC_API_URL environment variable
+  - Backend accessible internally via http://127.0.0.1:3001
+
+## Recent Changes (November 2025)
+
 - **✅ COMPLETE SUPABASE REMOVAL** - Fully migrated to native PostgreSQL
   - Created pgConsentService, pgControllerService, pgGovernanceService (direct pg.Pool queries)
   - Removed all @supabase packages from dependencies
