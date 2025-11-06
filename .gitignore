@@ -8,6 +8,10 @@ dist/
 build/
 *.class
 *.log
+.next/
+frontend/.next/
+backend/dist/
+backend/logs/
 
 # Environment variables
 .env
@@ -47,3 +51,7 @@ attached_assets/
 
 # Local files
 .local/
+.config/
+
+# Test files
+test-*.ts
