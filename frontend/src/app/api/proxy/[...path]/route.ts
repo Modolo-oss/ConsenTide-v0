@@ -44,7 +44,7 @@ async function proxyRequest(
 ) {
   try {
     const path = pathSegments.join('/')
-    const url = `${BACKEND_URL}/api/v1/${path}`
+    const url = `${BACKEND_URL}/api/${path}`
     
     const headers: Record<string, string> = {}
     request.headers.forEach((value, key) => {
