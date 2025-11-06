@@ -10,24 +10,23 @@ const getAPIURL = () => {
     return process.env.NEXT_PUBLIC_API_URL
   }
   
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname
-    const protocol = window.location.protocol
-    
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return 'http://localhost:3001'
-    }
-    
-    return `${protocol}//${host}:3001`
+  if (typeof window === 'undefined') {
+    return 'http://localhost:3001'
   }
   
-  return 'http://localhost:3001'
+  const host = window.location.hostname
+  
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:3001'
+  }
+  
+  return '/api/proxy'
 }
 
 const API_URL = getAPIURL()
 
 export const api = axios.create({
-  baseURL: `${API_URL}/api/v1`,
+  baseURL: API_URL.startsWith('/api/proxy') ? '/api/proxy/v1' : `${API_URL}/api/v1`,
   headers: {
     'Content-Type': 'application/json',
   },
