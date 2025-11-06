@@ -12,6 +12,7 @@ build/
 frontend/.next/
 backend/dist/
 backend/logs/
+shared/dist/
 
 # Environment variables
 .env
