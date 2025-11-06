@@ -37,6 +37,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
   'http://localhost:5000',
+  'https://consentide.live',
+  'http://consentide.live',
   process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
 ].filter(Boolean);
 

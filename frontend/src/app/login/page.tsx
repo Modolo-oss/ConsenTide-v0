@@ -147,30 +147,30 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <button
-                onClick={() => fillDemoCredentials('user@consentire.io', 'user123')}
+                onClick={() => fillDemoCredentials('user@consentire.io', 'password123')}
                 className="w-full text-left p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition group"
               >
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-slate-200 group-hover:text-white">👥 User</span>
-                  <span className="text-xs text-slate-400">user@consentire.io / user123</span>
+                  <span className="text-xs text-slate-400">user@consentire.io / password123</span>
                 </div>
               </button>
               <button
-                onClick={() => fillDemoCredentials('controller@consentire.com', 'controller123')}
+                onClick={() => fillDemoCredentials('org@consentire.io', 'password123')}
                 className="w-full text-left p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition group"
               >
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-slate-200 group-hover:text-white">🏢 Controller</span>
-                  <span className="text-xs text-slate-400">controller@consentire.com / controller123</span>
+                  <span className="text-xs text-slate-400">org@consentire.io / password123</span>
                 </div>
               </button>
               <button
-                onClick={() => fillDemoCredentials('regulator@consentire.io', 'reg123')}
+                onClick={() => fillDemoCredentials('regulator@consentire.io', 'password123')}
                 className="w-full text-left p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition group"
               >
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-slate-200 group-hover:text-white">🔬 Regulator</span>
-                  <span className="text-xs text-slate-400">regulator@consentire.io / reg123</span>
+                  <span className="text-xs text-slate-400">regulator@consentire.io / password123</span>
                 </div>
               </button>
             </div>
