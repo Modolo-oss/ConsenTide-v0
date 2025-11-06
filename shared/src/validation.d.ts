@@ -19,13 +19,13 @@ export declare const userRegistrationResponseSchema: z.ZodObject<{
     walletAddress: z.ZodString;
     createdAt: z.ZodNumber;
 }, "strip", z.ZodTypeAny, {
-    userId: string;
     did: string;
+    userId: string;
     walletAddress: string;
     createdAt: number;
 }, {
-    userId: string;
     did: string;
+    userId: string;
     walletAddress: string;
     createdAt: number;
 }>;
@@ -349,13 +349,13 @@ export declare const consentQuerySchema: z.ZodObject<{
     page: number;
     limit: number;
     sortOrder: "asc" | "desc";
-    userId?: string | undefined;
     status?: ConsentStatus | undefined;
+    userId?: string | undefined;
     controllerId?: string | undefined;
     sortBy?: string | undefined;
 }, {
-    userId?: string | undefined;
     status?: ConsentStatus | undefined;
+    userId?: string | undefined;
     controllerId?: string | undefined;
     page?: number | undefined;
     limit?: number | undefined;
@@ -382,13 +382,13 @@ export declare const schemas: {
         walletAddress: z.ZodString;
         createdAt: z.ZodNumber;
     }, "strip", z.ZodTypeAny, {
-        userId: string;
         did: string;
+        userId: string;
         walletAddress: string;
         createdAt: number;
     }, {
-        userId: string;
         did: string;
+        userId: string;
         walletAddress: string;
         createdAt: number;
     }>;
@@ -712,13 +712,13 @@ export declare const schemas: {
         page: number;
         limit: number;
         sortOrder: "asc" | "desc";
-        userId?: string | undefined;
         status?: ConsentStatus | undefined;
+        userId?: string | undefined;
         controllerId?: string | undefined;
         sortBy?: string | undefined;
     }, {
-        userId?: string | undefined;
         status?: ConsentStatus | undefined;
+        userId?: string | undefined;
         controllerId?: string | undefined;
         page?: number | undefined;
         limit?: number | undefined;
