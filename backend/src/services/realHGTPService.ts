@@ -73,8 +73,10 @@ class RealHGTPService {
       publicKey: process.env.CONSTELLATION_PUBLIC_KEY || ''
     };
 
+    const isProduction = process.env.NODE_ENV === 'production';
+
     // PRODUCTION MODE: Validate required credentials
-    if (!this.config.privateKey || !this.config.publicKey || !this.config.walletAddress) {
+    if (isProduction && (!this.config.privateKey || !this.config.publicKey || !this.config.walletAddress)) {
       logger.error('HGTP Service PRODUCTION MODE requires credentials', {
         missingKeys: {
           privateKey: !this.config.privateKey,
@@ -86,12 +88,12 @@ class RealHGTPService {
     }
 
     // Log configuration status (without exposing secrets)
-    logger.info('Initializing HGTP Service - PRODUCTION MODE', {
+    logger.info(`Initializing HGTP Service - ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} MODE`, {
       l0Node: this.config.nodeUrl,
       l1Node: this.config.l1Url,
       networkId: this.config.networkId,
-      walletConfigured: true,
-      mode: 'PRODUCTION'
+      walletConfigured: !!(this.config.privateKey && this.config.publicKey && this.config.walletAddress),
+      mode: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
     });
 
     // L0 client for node info and metadata
@@ -121,23 +123,31 @@ class RealHGTPService {
    * Initialize connection to Constellation network (PRODUCTION MODE)
    */
   private async initializeConnection() {
-    // Test HTTP connection - MUST succeed in production mode
-    const connected = await this.testConnection();
+    const isProduction = process.env.NODE_ENV === 'production';
     
-    if (!connected) {
-      throw new Error('Failed to connect to Constellation Mainnet - cannot operate in production mode without connection');
-    }
-    
-    // Initialize WebSocket for real-time updates (best effort - not blocking)
-    try {
-      await this.initializeWebSocket();
-    } catch (error) {
-      logger.warn('WebSocket initialization failed (non-blocking)', { error });
+    if (isProduction) {
+      // Test HTTP connection - MUST succeed in production mode
+      const connected = await this.testConnection();
+      
+      if (!connected) {
+        throw new Error('Failed to connect to Constellation Mainnet - cannot operate in production mode without connection');
+      }
+      
+      // Initialize WebSocket for real-time updates (best effort - not blocking)
+      try {
+        await this.initializeWebSocket();
+      } catch (error) {
+        logger.warn('WebSocket initialization failed (non-blocking)', { error });
+      }
+    } else {
+      // Development mode: skip network tests, use simulation
+      logger.info('Development mode: skipping Constellation network connection');
     }
     
     logger.info('HGTP service initialized successfully', {
       nodeUrl: this.config.nodeUrl,
-      networkId: this.config.networkId
+      networkId: this.config.networkId,
+      mode: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
     });
   }
 
