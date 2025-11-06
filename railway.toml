@@ -7,12 +7,12 @@ source = "backend"
 
 [services.variables]
 PORT = "3001"
-NODE_ENV = "development"
+NODE_ENV = "production"
 JWT_SECRET = "${{JWT_SECRET}}"
 DATABASE_URL = "${{DATABASE_URL}}"
-CONSTELLATION_PRIVATE_KEY = "dummy-dev-private-key"
-CONSTELLATION_PUBLIC_KEY = "dummy-dev-public-key"
-CONSTELLATION_WALLET_ADDRESS = "dummy-dev-wallet-address"
+CONSTELLATION_PRIVATE_KEY = "${{CONSTELLATION_PRIVATE_KEY}}"
+CONSTELLATION_PUBLIC_KEY = "${{CONSTELLATION_PUBLIC_KEY}}"
+CONSTELLATION_WALLET_ADDRESS = "${{CONSTELLATION_WALLET_ADDRESS}}"
 
 # Frontend Service
 [[services]]
