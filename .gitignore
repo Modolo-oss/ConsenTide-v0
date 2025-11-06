@@ -37,3 +37,13 @@ coverage/
 # Scala
 metagraph/target/
 *.sbt-build/
+
+# Replit specific files
+.replit
+replit.md
+
+# Attached assets
+attached_assets/
+
+# Local files
+.local/
