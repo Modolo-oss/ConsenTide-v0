@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { 
   ShieldCheckIcon, 
   XCircleIcon,
@@ -11,7 +12,9 @@ import {
   Cog6ToothIcon,
   ArrowDownTrayIcon,
   DocumentTextIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  CheckBadgeIcon,
+  ArrowUpRightIcon
 } from '@heroicons/react/24/outline'
 import { api } from '@/lib/api'
 import {
@@ -30,6 +33,17 @@ interface OrganizationData {
   complianceScore: number
   totalConsents: number
   lastAudit: string
+}
+
+function BackgroundTexture() {
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="absolute -left-20 top-[-180px] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.65)_0%,_rgba(5,6,10,0)_65%)] blur-3xl" />
+      <div className="absolute right-[-120px] top-[-80px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.55)_0%,_rgba(5,6,10,0)_70%)] blur-3xl" />
+      <div className="absolute inset-x-0 bottom-[-220px] h-[520px] bg-[radial-gradient(circle,_rgba(236,72,153,0.25)_0%,_rgba(5,6,10,0)_70%)] blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.1)_0%,_rgba(10,10,12,0)_55%)]" />
+    </div>
+  )
 }
 
 export default function Dashboard() {
@@ -206,66 +220,73 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Personal Privacy Dashboard</h1>
+    <div className="relative min-h-screen overflow-hidden bg-[#05060A] text-slate-100">
+      <BackgroundTexture />
+
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#05060A]/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/60 to-sky-500/60 shadow-[0_8px_30px_rgba(90,97,255,0.35)]">
+              <CheckBadgeIcon className="h-6 w-6" />
             </div>
-            <div className="flex items-center space-x-4">
-              {signedIn && (
-                <div className="text-sm text-gray-600">
-                  {userId?.substring(0, 16)}...
-                </div>
-              )}
-              {signedIn && (
-                <button
-                  onClick={handleSignOut}
-                  className="text-sm text-gray-500 hover:text-gray-700"
-                >
-                  Sign out
-                </button>
-              )}
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">consentire</p>
+              <p className="text-lg font-semibold text-white">Personal Privacy Dashboard</p>
             </div>
+          </Link>
+
+          <div className="flex items-center space-x-4">
+            {signedIn && (
+              <div className="text-sm text-slate-400">
+                {userId?.substring(0, 16)}...
+              </div>
+            )}
+            {signedIn && (
+              <button
+                onClick={handleSignOut}
+                className="text-sm text-slate-400 hover:text-white transition"
+              >
+                Sign out
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-8">
         {!signedIn && (
-          <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
-            <ShieldCheckIcon className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to ConsenTide</h2>
-            <p className="text-gray-700 mb-6">Sign in to manage your GDPR consents with zero-knowledge privacy.</p>
+          <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-8 text-center mb-6">
+            <ShieldCheckIcon className="h-16 w-16 text-violet-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Welcome to ConsenTide</h2>
+            <p className="text-slate-300 mb-6">Sign in to manage your GDPR consents with zero-knowledge privacy.</p>
             <div className="space-y-3">
-              <button onClick={handleEmailSignIn} className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+              <button 
+                onClick={handleEmailSignIn} 
+                className="w-full bg-gradient-to-r from-violet-500 to-sky-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-violet-600 hover:to-sky-600 transition shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
+              >
                 Sign in to Continue
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-4">
-              New user? <a href="/register" className="text-blue-600 hover:text-blue-800">Create an account</a>
+            <p className="text-sm text-slate-400 mt-4">
+              New user? <a href="/register" className="text-violet-400 hover:text-violet-300">Create an account</a>
             </p>
           </div>
         )}
 
         {signedIn && (
           <>
-            {/* Tab Navigation */}
-            <div className="bg-white rounded-lg shadow mb-6">
-              <nav className="flex space-x-4 p-4 border-b border-gray-200">
+            <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.5)] mb-6">
+              <nav className="flex space-x-4 p-4 border-b border-white/10">
                 {tabs.map((tab) => {
                   const Icon = tab.icon
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition ${
                         activeTab === tab.id
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-gradient-to-r from-violet-500/20 to-sky-500/20 text-white border border-white/10'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                       }`}
                     >
                       <Icon className="h-5 w-5" />
@@ -275,7 +296,6 @@ export default function Dashboard() {
                 })}
               </nav>
 
-              {/* Tab Content */}
               <div className="p-6">
                 {activeTab === 'consents' && (
                   <MyConsentsTab
@@ -299,36 +319,35 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-6">
                 <div className="flex items-center">
-                  <DocumentTextIcon className="h-10 w-10 text-blue-600" />
+                  <DocumentTextIcon className="h-10 w-10 text-violet-400" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Consents</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-sm font-medium text-slate-400">Active Consents</p>
+                    <p className="text-2xl font-bold text-slate-100">
                       {consents.filter(c => c.status === ConsentStatus.GRANTED).length}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-6">
                 <div className="flex items-center">
-                  <BuildingOfficeIcon className="h-10 w-10 text-green-600" />
+                  <BuildingOfficeIcon className="h-10 w-10 text-sky-400" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Organizations</p>
-                    <p className="text-2xl font-bold text-gray-900">{userOrganizations.length}</p>
+                    <p className="text-sm font-medium text-slate-400">Organizations</p>
+                    <p className="text-2xl font-bold text-slate-100">{userOrganizations.length}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-6">
                 <div className="flex items-center">
-                  <ChartBarIcon className="h-10 w-10 text-purple-600" />
+                  <ChartBarIcon className="h-10 w-10 text-pink-400" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Privacy Score</p>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-sm font-medium text-slate-400">Privacy Score</p>
+                    <p className="text-2xl font-bold text-slate-100">
                       {consents.length > 0 ? Math.round((consents.filter(c => c.status === ConsentStatus.GRANTED).length / consents.length) * 100) : 0}%
                     </p>
                   </div>
@@ -338,7 +357,6 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* Grant Consent Form Modal */}
         {signedIn && showGrantForm && (
           <GrantConsentForm
             userId={userId!}
@@ -365,12 +383,12 @@ function MyConsentsTab({
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">My Consent Permissions</h2>
-          <p className="text-sm text-gray-600 mt-1">Control who has access to your personal data</p>
+          <h2 className="text-xl font-bold text-slate-100">My Consent Permissions</h2>
+          <p className="text-sm text-slate-400 mt-1">Control who has access to your personal data</p>
         </div>
         <button
           onClick={onGrantNew}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center space-x-2"
+          className="bg-gradient-to-r from-violet-500 to-sky-500 text-white px-4 py-2 rounded-xl font-semibold hover:from-violet-600 hover:to-sky-600 transition flex items-center space-x-2 shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
         >
           <PlusIcon className="h-5 w-5" />
           <span>Grant New Consent</span>
@@ -379,11 +397,11 @@ function MyConsentsTab({
 
       {consents.length === 0 ? (
         <div className="text-center py-12">
-          <ShieldCheckIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-4">You haven't granted any consents yet.</p>
+          <ShieldCheckIcon className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+          <p className="text-slate-400 mb-4">You haven't granted any consents yet.</p>
           <button
             onClick={onGrantNew}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+            className="bg-gradient-to-r from-violet-500 to-sky-500 text-white px-4 py-2 rounded-xl font-semibold hover:from-violet-600 hover:to-sky-600 transition shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
           >
             Grant Your First Consent
           </button>
@@ -407,33 +425,33 @@ function OrganizationsTab({ organizations }: { organizations: OrganizationData[]
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Organizations with Your Data</h2>
-        <p className="text-sm text-gray-600 mt-1">View all organizations that have been granted access to your personal information</p>
+        <h2 className="text-xl font-bold text-slate-100">Organizations with Your Data</h2>
+        <p className="text-sm text-slate-400 mt-1">View all organizations that have been granted access to your personal information</p>
       </div>
 
       {organizations.length === 0 ? (
         <div className="text-center py-12">
-          <BuildingOfficeIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No organizations have access to your data yet.</p>
+          <BuildingOfficeIcon className="h-16 w-16 text-slate-500 mx-auto mb-4" />
+          <p className="text-slate-400">No organizations have access to your data yet.</p>
         </div>
       ) : (
         <div className="grid gap-4">
           {organizations.map((org) => (
-            <div key={org.id} className="bg-gray-50 rounded-lg p-6 hover:bg-gray-100 transition">
+            <div key={org.id} className="border border-white/10 bg-white/5 rounded-xl p-6 hover:bg-white/10 transition">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{org.name}</h3>
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <p><strong>Organization ID:</strong> {org.id}</p>
-                    <p><strong>Active Consents:</strong> {org.totalConsents}</p>
-                    <p><strong>Last Audit:</strong> {new Date(org.lastAudit).toLocaleDateString()}</p>
+                  <h3 className="text-lg font-semibold text-slate-100 mb-2">{org.name}</h3>
+                  <div className="space-y-1 text-sm text-slate-400">
+                    <p><strong className="text-slate-300">Organization ID:</strong> {org.id}</p>
+                    <p><strong className="text-slate-300">Active Consents:</strong> {org.totalConsents}</p>
+                    <p><strong className="text-slate-300">Last Audit:</strong> {new Date(org.lastAudit).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <div className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-                    org.complianceScore >= 90 ? 'bg-green-100 text-green-800' :
-                    org.complianceScore >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
+                    org.complianceScore >= 90 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                    org.complianceScore >= 70 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                    'bg-red-500/20 text-red-300 border border-red-500/30'
                   }`}>
                     {org.complianceScore}% Compliant
                   </div>
@@ -471,20 +489,20 @@ function PrivacySettingsTab() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Privacy Settings</h2>
-        <p className="text-sm text-gray-600 mt-1">Configure your privacy preferences and data management options</p>
+        <h2 className="text-xl font-bold text-slate-100">Privacy Settings</h2>
+        <p className="text-sm text-slate-400 mt-1">Configure your privacy preferences and data management options</p>
       </div>
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 border border-white/10 bg-white/5 rounded-xl">
           <div>
-            <h3 className="font-semibold text-gray-900">Auto-Revoke Expired Consents</h3>
-            <p className="text-sm text-gray-600">Automatically revoke consents when they expire</p>
+            <h3 className="font-semibold text-slate-100">Auto-Revoke Expired Consents</h3>
+            <p className="text-sm text-slate-400">Automatically revoke consents when they expire</p>
           </div>
           <button
             onClick={() => setAutoRevoke(!autoRevoke)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              autoRevoke ? 'bg-blue-600' : 'bg-gray-200'
+              autoRevoke ? 'bg-gradient-to-r from-violet-500 to-sky-500' : 'bg-white/10 border border-white/10'
             }`}
           >
             <span
@@ -495,15 +513,15 @@ function PrivacySettingsTab() {
           </button>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 border border-white/10 bg-white/5 rounded-xl">
           <div>
-            <h3 className="font-semibold text-gray-900">Consent Change Notifications</h3>
-            <p className="text-sm text-gray-600">Receive alerts when organizations access your data</p>
+            <h3 className="font-semibold text-slate-100">Consent Change Notifications</h3>
+            <p className="text-sm text-slate-400">Receive alerts when organizations access your data</p>
           </div>
           <button
             onClick={() => setNotifications(!notifications)}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-              notifications ? 'bg-blue-600' : 'bg-gray-200'
+              notifications ? 'bg-gradient-to-r from-violet-500 to-sky-500' : 'bg-white/10 border border-white/10'
             }`}
           >
             <span
@@ -514,13 +532,13 @@ function PrivacySettingsTab() {
           </button>
         </div>
 
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold text-gray-900 mb-3">Default Data Retention Period</h3>
-          <p className="text-sm text-gray-600 mb-4">Set how long organizations can keep your data by default</p>
+        <div className="p-4 border border-white/10 bg-white/5 rounded-xl">
+          <h3 className="font-semibold text-slate-100 mb-3">Default Data Retention Period</h3>
+          <p className="text-sm text-slate-400 mb-4">Set how long organizations can keep your data by default</p>
           <select
             value={dataRetention}
             onChange={(e) => setDataRetention(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-white/10 bg-white/5 text-slate-100 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 backdrop-blur"
           >
             <option value="3months">3 Months</option>
             <option value="6months">6 Months</option>
@@ -533,7 +551,7 @@ function PrivacySettingsTab() {
         <div className="pt-4">
           <button 
             onClick={saveSettings}
-            className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            className="w-full bg-gradient-to-r from-violet-500 to-sky-500 text-white px-4 py-3 rounded-xl font-semibold hover:from-violet-600 hover:to-sky-600 transition shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
           >
             Save Privacy Settings
           </button>
@@ -553,17 +571,17 @@ function DataExportTab({
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Data Export Tools</h2>
-        <p className="text-sm text-gray-600 mt-1">Download your consent records and exercise your GDPR data portability rights</p>
+        <h2 className="text-xl font-bold text-slate-100">Data Export Tools</h2>
+        <p className="text-sm text-slate-400 mt-1">Download your consent records and exercise your GDPR data portability rights</p>
       </div>
 
       <div className="space-y-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="border border-violet-500/30 bg-gradient-to-r from-violet-500/10 to-transparent rounded-xl p-6 backdrop-blur">
           <div className="flex items-start">
-            <ShieldCheckIcon className="h-6 w-6 text-blue-600 mt-0.5 mr-3" />
+            <ShieldCheckIcon className="h-6 w-6 text-violet-400 mt-0.5 mr-3" />
             <div>
-              <h3 className="text-sm font-medium text-blue-900 mb-2">GDPR Article 20: Right to Data Portability</h3>
-              <p className="text-sm text-blue-700">
+              <h3 className="text-sm font-medium text-violet-300 mb-2">GDPR Article 20: Right to Data Portability</h3>
+              <p className="text-sm text-slate-300">
                 You have the right to receive your personal data in a structured, commonly used, and machine-readable format.
                 Export your consent records below to exercise this right.
               </p>
@@ -574,12 +592,12 @@ function DataExportTab({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button
             onClick={() => onExport('json')}
-            className="p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left"
+            className="p-6 border border-white/10 bg-white/5 rounded-xl hover:border-violet-500/50 hover:bg-white/10 transition text-left backdrop-blur group"
           >
-            <DocumentTextIcon className="h-10 w-10 text-blue-600 mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-2">Export as JSON</h3>
-            <p className="text-sm text-gray-600">Machine-readable format for developer integration</p>
-            <div className="mt-4 flex items-center text-sm text-blue-600 font-medium">
+            <DocumentTextIcon className="h-10 w-10 text-violet-400 mb-3 group-hover:text-violet-300 transition" />
+            <h3 className="font-semibold text-slate-100 mb-2">Export as JSON</h3>
+            <p className="text-sm text-slate-400">Machine-readable format for developer integration</p>
+            <div className="mt-4 flex items-center text-sm text-violet-400 font-medium">
               <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
               Download JSON
             </div>
@@ -587,40 +605,40 @@ function DataExportTab({
 
           <button
             onClick={() => onExport('csv')}
-            className="p-6 bg-white border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition text-left"
+            className="p-6 border border-white/10 bg-white/5 rounded-xl hover:border-sky-500/50 hover:bg-white/10 transition text-left backdrop-blur group"
           >
-            <DocumentTextIcon className="h-10 w-10 text-green-600 mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-2">Export as CSV</h3>
-            <p className="text-sm text-gray-600">Spreadsheet format for Excel and data analysis</p>
-            <div className="mt-4 flex items-center text-sm text-green-600 font-medium">
+            <DocumentTextIcon className="h-10 w-10 text-sky-400 mb-3 group-hover:text-sky-300 transition" />
+            <h3 className="font-semibold text-slate-100 mb-2">Export as CSV</h3>
+            <p className="text-sm text-slate-400">Spreadsheet format for Excel and data analysis</p>
+            <div className="mt-4 flex items-center text-sm text-sky-400 font-medium">
               <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
               Download CSV
             </div>
           </button>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Export Summary</h3>
+        <div className="border border-white/10 bg-white/5 rounded-xl p-6 backdrop-blur">
+          <h3 className="font-semibold text-slate-100 mb-4">Export Summary</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-gray-600">Total Consents</p>
-              <p className="text-2xl font-bold text-gray-900">{consents.length}</p>
+              <p className="text-slate-400">Total Consents</p>
+              <p className="text-2xl font-bold text-slate-100">{consents.length}</p>
             </div>
             <div>
-              <p className="text-gray-600">Active Consents</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-slate-400">Active Consents</p>
+              <p className="text-2xl font-bold text-emerald-400">
                 {consents.filter(c => c.status === ConsentStatus.GRANTED).length}
               </p>
             </div>
             <div>
-              <p className="text-gray-600">Revoked Consents</p>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-slate-400">Revoked Consents</p>
+              <p className="text-2xl font-bold text-red-400">
                 {consents.filter(c => c.status === ConsentStatus.REVOKED).length}
               </p>
             </div>
             <div>
-              <p className="text-gray-600">Expired Consents</p>
-              <p className="text-2xl font-bold text-yellow-600">
+              <p className="text-slate-400">Expired Consents</p>
+              <p className="text-2xl font-bold text-amber-400">
                 {consents.filter(c => c.status === ConsentStatus.EXPIRED).length}
               </p>
             </div>
@@ -641,13 +659,13 @@ function ConsentCard({
   const getStatusIcon = (status: ConsentStatus) => {
     switch (status) {
       case ConsentStatus.GRANTED:
-        return <CheckCircleIcon className="h-6 w-6 text-green-500" />
+        return <CheckCircleIcon className="h-6 w-6 text-emerald-400" />
       case ConsentStatus.REVOKED:
-        return <XCircleIcon className="h-6 w-6 text-red-500" />
+        return <XCircleIcon className="h-6 w-6 text-red-400" />
       case ConsentStatus.EXPIRED:
-        return <ClockIcon className="h-6 w-6 text-yellow-500" />
+        return <ClockIcon className="h-6 w-6 text-amber-400" />
       default:
-        return <ClockIcon className="h-6 w-6 text-gray-500" />
+        return <ClockIcon className="h-6 w-6 text-slate-500" />
     }
   }
 
@@ -656,26 +674,26 @@ function ConsentCard({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+    <div className="border border-white/10 bg-white/5 backdrop-blur rounded-xl p-6 hover:bg-white/10 transition">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-3">
             {getStatusIcon(consent.status)}
-            <span className="font-semibold text-gray-900 capitalize">{consent.status}</span>
+            <span className="font-semibold text-slate-100 capitalize">{consent.status}</span>
           </div>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p><strong>Consent ID:</strong> {consent.consentId?.substring(0, 16) || 'N/A'}...</p>
-            <p><strong>Controller Hash:</strong> {consent.controllerHash?.substring(0, 16) || 'N/A'}...</p>
-            <p><strong>Purpose Hash:</strong> {consent.purposeHash?.substring(0, 16) || 'N/A'}...</p>
-            <p><strong>Granted:</strong> {formatDate(consent.grantedAt)}</p>
+          <div className="space-y-2 text-sm text-slate-400">
+            <p><strong className="text-slate-300">Consent ID:</strong> {consent.consentId?.substring(0, 16) || 'N/A'}...</p>
+            <p><strong className="text-slate-300">Controller Hash:</strong> {consent.controllerHash?.substring(0, 16) || 'N/A'}...</p>
+            <p><strong className="text-slate-300">Purpose Hash:</strong> {consent.purposeHash?.substring(0, 16) || 'N/A'}...</p>
+            <p><strong className="text-slate-300">Granted:</strong> {formatDate(consent.grantedAt)}</p>
             {consent.expiresAt && (
-              <p><strong>Expires:</strong> {formatDate(consent.expiresAt)}</p>
+              <p><strong className="text-slate-300">Expires:</strong> {formatDate(consent.expiresAt)}</p>
             )}
             {consent.hgtpTxHash && (
-              <div className="flex items-center gap-2 mt-3 p-2 bg-blue-50 rounded border border-blue-200">
-                <DocumentTextIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <div className="flex items-center gap-2 mt-3 p-2 border border-violet-500/30 bg-gradient-to-r from-violet-500/10 to-transparent rounded-xl backdrop-blur">
+                <DocumentTextIcon className="h-4 w-4 text-violet-400 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-blue-900 mb-0.5">Blockchain Anchored</p>
+                  <p className="text-xs font-medium text-violet-300 mb-0.5">Blockchain Anchored</p>
                   <a 
                     href={`#/explorer/${consent.hgtpTxHash}`}
                     onClick={(e) => {
@@ -683,13 +701,13 @@ function ConsentCard({
                       const anchorTime = consent.anchoringTimestamp ? formatDate(consent.anchoringTimestamp) : formatDate(consent.grantedAt)
                       alert(`Constellation HGTP Explorer\n\nTransaction Hash: ${consent.hgtpTxHash}\n\nStatus: Confirmed\nNetwork: IntegrationNet\nAnchored: ${anchorTime}\n\nNote: Running in enhanced simulation mode for demo purposes`)
                     }}
-                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-mono truncate block"
+                    className="text-xs text-violet-400 hover:text-violet-300 hover:underline font-mono truncate block"
                     title={consent.hgtpTxHash}
                   >
                     {consent.hgtpTxHash.substring(0, 20)}...
                   </a>
                   {consent.anchoringTimestamp && (
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       Anchored: {formatDate(consent.anchoringTimestamp)}
                     </p>
                   )}
@@ -701,7 +719,7 @@ function ConsentCard({
         {consent.status === ConsentStatus.GRANTED && (
           <button
             onClick={() => onRevoke(consent.consentId)}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition"
+            className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:from-red-600 hover:to-pink-600 transition shadow-[0_8px_30px_rgba(239,68,68,0.35)]"
           >
             Revoke
           </button>
@@ -745,12 +763,12 @@ function GrantConsentForm({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Grant New Consent</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="border border-white/10 bg-[#05060A]/95 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <h2 className="text-2xl font-bold text-slate-100 mb-6">Grant New Consent</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Controller ID
             </label>
             <input
@@ -758,12 +776,12 @@ function GrantConsentForm({
               required
               value={formData.controllerId}
               onChange={(e) => setFormData({ ...formData, controllerId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-white/10 bg-white/5 text-slate-100 placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 backdrop-blur"
               placeholder="Organization identifier"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Data Categories
             </label>
             <input
@@ -780,32 +798,32 @@ function GrantConsentForm({
                     .filter(Boolean)
                 })
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-white/10 bg-white/5 text-slate-100 placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 backdrop-blur"
               placeholder="email, name, address"
             />
-            <p className="text-xs text-gray-500 mt-1">Comma-separated list of personal data fields requested.</p>
+            <p className="text-xs text-slate-500 mt-1">Comma-separated list of personal data fields requested.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Purpose
             </label>
             <textarea
               required
               value={formData.purpose}
               onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-white/10 bg-white/5 text-slate-100 placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 backdrop-blur"
               rows={3}
               placeholder="Data processing purpose"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Lawful Basis
             </label>
             <select
               value={formData.lawfulBasis}
               onChange={(e) => setFormData({ ...formData, lawfulBasis: e.target.value as LegalBasis })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-white/10 bg-white/5 text-slate-100 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 backdrop-blur"
             >
               {Object.values(LegalBasis).map((basis) => (
                 <option key={basis} value={basis}>{basis}</option>
@@ -813,28 +831,28 @@ function GrantConsentForm({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-300 mb-1">
               Expiration Date (Optional)
             </label>
             <input
               type="datetime-local"
               value={formData.expiresAt}
               onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-white/10 bg-white/5 text-slate-100 rounded-xl focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 backdrop-blur"
             />
           </div>
           <div className="flex space-x-4 pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+              className="flex-1 bg-gradient-to-r from-violet-500 to-sky-500 text-white px-4 py-2 rounded-xl font-semibold hover:from-violet-600 hover:to-sky-600 transition disabled:opacity-50 shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
             >
               {loading ? 'Granting...' : 'Grant Consent'}
             </button>
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition"
+              className="flex-1 border border-white/10 bg-white/5 text-slate-300 px-4 py-2 rounded-xl font-semibold hover:bg-white/10 hover:text-white transition backdrop-blur"
             >
               Cancel
             </button>

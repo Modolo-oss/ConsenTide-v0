@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import {
   ShieldCheckIcon,
   ChartBarIcon,
@@ -11,7 +12,8 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   ArrowTrendingUpIcon,
-  ClipboardDocumentIcon
+  ClipboardDocumentIcon,
+  CheckBadgeIcon
 } from '@heroicons/react/24/outline'
 import { api } from '@/lib/api'
 
@@ -40,6 +42,17 @@ interface GDPRArticle {
   score: number
 }
 
+function BackgroundTexture() {
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="absolute -left-20 top-[-180px] h-[460px] w-[460px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.65)_0%,_rgba(5,6,10,0)_65%)] blur-3xl" />
+      <div className="absolute right-[-120px] top-[-80px] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.55)_0%,_rgba(5,6,10,0)_70%)] blur-3xl" />
+      <div className="absolute inset-x-0 bottom-[-220px] h-[520px] bg-[radial-gradient(circle,_rgba(236,72,153,0.25)_0%,_rgba(5,6,10,0)_70%)] blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.1)_0%,_rgba(10,10,12,0)_55%)]" />
+    </div>
+  )
+}
+
 export default function CompliancePage() {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [stats, setStats] = useState<ComplianceStats | null>(null)
@@ -52,7 +65,6 @@ export default function CompliancePage() {
   const [gdprCompliance, setGdprCompliance] = useState<any>(null)
   const [currentControllerHash, setCurrentControllerHash] = useState<string | undefined>(undefined)
 
-  // GDPR Article metadata
   const gdprArticleDetails = [
     {
       article: 'Article 7',
@@ -144,13 +156,11 @@ export default function CompliancePage() {
       setStats(statsRes.data)
       setControllers(controllersRes.data.controllers || [])
       
-      // Fetch real GDPR compliance for the logged-in user's controller
       const userStr = localStorage.getItem('user')
       if (userStr) {
         try {
           const user = JSON.parse(userStr)
           
-          // Find the controller matching the logged-in user's organization_id
           if (user.organizationId) {
             const userController = controllersRes.data.controllers.find(
               (ctrl: any) => ctrl.organization_id === user.organizationId
@@ -162,7 +172,6 @@ export default function CompliancePage() {
               setGdprCompliance(complianceRes.data)
             } else {
               console.error(`No controller found for organizationId: ${user.organizationId}`)
-              // Do NOT fallback to first controller - this would expose other organization's data
             }
           } else {
             console.warn('User has no organizationId assigned')
@@ -214,39 +223,43 @@ export default function CompliancePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#05060A] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading compliance data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading compliance data...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Controller Compliance Dashboard</h1>
-                <p className="text-sm text-gray-600">Manage GDPR compliance and consent automation</p>
-              </div>
+    <div className="relative min-h-screen overflow-hidden bg-[#05060A] text-slate-100">
+      <BackgroundTexture />
+
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#05060A]/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <Link href="/" className="flex items-center space-x-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/60 to-sky-500/60 shadow-[0_8px_30px_rgba(90,97,255,0.35)]">
+              <CheckBadgeIcon className="h-6 w-6" />
             </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.4em] text-slate-400">consentire</p>
+              <p className="text-lg font-semibold text-white">Controller Compliance Dashboard</p>
+            </div>
+          </Link>
+
+          <div className="flex items-center space-x-4">
             {signedIn ? (
               <button
                 onClick={handleSignOut}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-slate-400 hover:text-white transition"
               >
                 Sign out
               </button>
             ) : (
               <button
                 onClick={handleSignIn}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="text-sm text-violet-400 hover:text-violet-300 transition"
               >
                 Sign in
               </button>
@@ -255,35 +268,40 @@ export default function CompliancePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-8">
         {!signedIn && (
-          <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
-            <p className="text-gray-700 mb-4">Sign in as a controller to view compliance dashboard.</p>
-            <button onClick={handleSignIn} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Sign in</button>
+          <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-8 text-center mb-6">
+            <ShieldCheckIcon className="h-16 w-16 text-violet-400 mx-auto mb-4" />
+            <p className="text-slate-300 mb-4">Sign in as a controller to view compliance dashboard.</p>
+            <button 
+              onClick={handleSignIn} 
+              className="bg-gradient-to-r from-violet-500 to-sky-500 text-white px-6 py-3 rounded-xl font-semibold hover:from-violet-600 hover:to-sky-600 transition shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
+            >
+              Sign in
+            </button>
           </div>
         )}
 
         {signedIn && !isController && (
-          <div className="bg-white rounded-lg shadow p-8 text-center mb-6">
-            <p className="text-gray-700">You must be a controller to access this dashboard.</p>
+          <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.5)] p-8 text-center mb-6">
+            <p className="text-slate-300">You must be a controller to access this dashboard.</p>
           </div>
         )}
 
         {isController && (
           <>
-            {/* Tab Navigation */}
-            <div className="bg-white rounded-lg shadow mb-6">
-              <nav className="flex space-x-4 p-4 border-b border-gray-200">
+            <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.5)] mb-6">
+              <nav className="flex space-x-4 p-4 border-b border-white/10">
                 {tabs.map((tab) => {
                   const Icon = tab.icon
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition ${
+                      className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition ${
                         activeTab === tab.id
-                          ? 'bg-blue-50 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-gradient-to-r from-violet-500/20 to-sky-500/20 text-white border border-white/10'
+                          : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
                       }`}
                     >
                       <Icon className="h-5 w-5" />
@@ -332,110 +350,107 @@ function OverviewTab({
 }) {
   return (
     <div>
-      {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6">
           <div className="flex items-center">
-            <ShieldCheckIcon className="h-8 w-8 text-blue-600" />
+            <ShieldCheckIcon className="h-8 w-8 text-violet-400" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Registered Controllers</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.totalControllers || 0}</p>
+              <p className="text-sm font-medium text-slate-400">Registered Controllers</p>
+              <p className="text-2xl font-bold text-slate-100">{stats?.totalControllers || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6">
           <div className="flex items-center">
-            <DocumentTextIcon className="h-8 w-8 text-green-600" />
+            <DocumentTextIcon className="h-8 w-8 text-emerald-400" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Active Consents</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.activeConsents?.toLocaleString() || 0}</p>
+              <p className="text-sm font-medium text-slate-400">Active Consents</p>
+              <p className="text-2xl font-bold text-slate-100">{stats?.activeConsents?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6">
           <div className="flex items-center">
-            <ChartBarIcon className="h-8 w-8 text-purple-600" />
+            <ChartBarIcon className="h-8 w-8 text-sky-400" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Avg Compliance Score</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.complianceScore || 0}%</p>
+              <p className="text-sm font-medium text-slate-400">Avg Compliance Score</p>
+              <p className="text-2xl font-bold text-slate-100">{stats?.complianceScore || 0}%</p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6">
           <div className="flex items-center">
-            <UsersIcon className="h-8 w-8 text-orange-600" />
+            <UsersIcon className="h-8 w-8 text-pink-400" />
             <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Data Subjects</p>
-              <p className="text-2xl font-bold text-gray-900">10K+</p>
+              <p className="text-sm font-medium text-slate-400">Data Subjects</p>
+              <p className="text-2xl font-bold text-slate-100">10K+</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Compliance Progress */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Overall Compliance Progress</h2>
-        <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
+      <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold text-slate-100 mb-4">Overall Compliance Progress</h2>
+        <div className="w-full bg-white/10 rounded-full h-4 mb-4">
           <div
-            className="bg-gradient-to-r from-green-500 to-blue-500 h-4 rounded-full"
+            className="bg-gradient-to-r from-violet-500 to-sky-500 h-4 rounded-full shadow-[0_0_20px_rgba(90,97,255,0.5)]"
             style={{ width: `${stats?.complianceScore || 0}%` }}
           />
         </div>
-        <div className="flex justify-between text-sm text-gray-600">
+        <div className="flex justify-between text-sm text-slate-400">
           <span>Current: {stats?.complianceScore || 0}%</span>
           <span>Target: 95%</span>
         </div>
       </div>
 
-      {/* Controller Directory */}
-      <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Controller Directory</h2>
+      <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl overflow-hidden">
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-lg font-semibold text-slate-100">Controller Directory</h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-white/5 border-b border-white/10">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Controller
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Compliance Score
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Active Consents
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Last Audit
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-white/10">
               {controllers.map((controller) => (
-                <tr key={controller.id} className="hover:bg-gray-50">
+                <tr key={controller.id} className="hover:bg-white/5 transition">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{controller.name}</div>
-                      <div className="text-sm text-gray-500">{controller.id}</div>
+                      <div className="text-sm font-medium text-slate-100">{controller.name}</div>
+                      <div className="text-sm text-slate-400">{controller.id}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      controller.complianceScore >= 90 ? 'bg-green-100 text-green-800' :
-                      controller.complianceScore >= 70 ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
+                      controller.complianceScore >= 90 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                      controller.complianceScore >= 70 ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30' :
+                      'bg-red-500/20 text-red-300 border border-red-500/30'
                     }`}>
                       {controller.complianceScore}%
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
                     {controller.totalConsents.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-100">
                     {new Date(controller.lastAudit).toLocaleDateString()}
                   </td>
                 </tr>
@@ -460,56 +475,54 @@ function ComplianceTab({
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">GDPR Compliance Monitor</h2>
-        <p className="text-sm text-gray-600 mt-1">Real-time compliance status from database</p>
+        <h2 className="text-xl font-bold text-slate-100">GDPR Compliance Monitor</h2>
+        <p className="text-sm text-slate-400 mt-1">Real-time compliance status from database</p>
       </div>
 
       {!compliance ? (
-        <div className="text-center py-12 text-gray-500">Loading GDPR compliance data...</div>
+        <div className="text-center py-12 text-slate-400">Loading GDPR compliance data...</div>
       ) : (
         <>
-          {/* Overall Compliance */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 mb-6">
+          <div className="bg-gradient-to-r from-violet-500/20 to-sky-500/20 border border-violet-500/30 backdrop-blur-xl rounded-xl p-6 mb-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Overall GDPR Compliance</h3>
-                <p className="text-sm text-gray-600">Real-time score based on consent data</p>
+                <h3 className="text-lg font-semibold text-slate-100 mb-2">Overall GDPR Compliance</h3>
+                <p className="text-sm text-slate-400">Real-time score based on consent data</p>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-bold text-blue-600">{overallScore}%</div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="text-4xl font-bold bg-gradient-to-r from-violet-400 to-sky-400 bg-clip-text text-transparent">{overallScore}%</div>
+                <div className="text-sm text-slate-400 mt-1">
                   {overallScore >= 90 ? 'Excellent' : overallScore >= 75 ? 'Good' : 'Needs Improvement'}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* GDPR Articles */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {articleDetails.map((detail) => {
               const isCompliant = compliance[detail.key] || false
               return (
-                <div key={detail.article} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
+                <div key={detail.article} className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6 hover:bg-white/10 transition">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center space-x-2 mb-1">
                         {isCompliant ? (
-                          <CheckCircleIcon className="h-5 w-5 text-green-600" />
+                          <CheckCircleIcon className="h-5 w-5 text-emerald-400" />
                         ) : (
-                          <XCircleIcon className="h-5 w-5 text-red-600" />
+                          <XCircleIcon className="h-5 w-5 text-red-400" />
                         )}
-                        <span className="text-sm font-semibold text-gray-600">{detail.article}</span>
+                        <span className="text-sm font-semibold text-slate-400">{detail.article}</span>
                       </div>
-                      <h3 className="font-semibold text-gray-900">{detail.title}</h3>
+                      <h3 className="font-semibold text-slate-100">{detail.title}</h3>
                     </div>
-                    <span className={`text-lg font-bold ${isCompliant ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`text-lg font-bold ${isCompliant ? 'text-emerald-400' : 'text-red-400'}`}>
                       {isCompliant ? '✓' : '✗'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3">{detail.description}</p>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <p className="text-sm text-slate-400 mb-3">{detail.description}</p>
+                  <div className="w-full bg-white/10 rounded-full h-2">
                     <div
-                      className={`h-2 rounded-full ${isCompliant ? 'bg-green-500' : 'bg-red-500'}`}
+                      className={`h-2 rounded-full ${isCompliant ? 'bg-emerald-500 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-red-500'}`}
                       style={{ width: isCompliant ? '100%' : '0%' }}
                     />
                   </div>
@@ -556,102 +569,99 @@ if (isValid) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">API Integration</h2>
-        <p className="text-sm text-gray-600 mt-1">Integrate ConsenTide consent verification into your applications</p>
+        <h2 className="text-xl font-bold text-slate-100">API Integration</h2>
+        <p className="text-sm text-slate-400 mt-1">Integrate ConsenTide consent verification into your applications</p>
       </div>
 
-      {/* API Key Management */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+      <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6 mb-6">
         <div className="flex items-center space-x-2 mb-4">
-          <KeyIcon className="h-6 w-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">API Key</h3>
+          <KeyIcon className="h-6 w-6 text-violet-400" />
+          <h3 className="text-lg font-semibold text-slate-100">API Key</h3>
         </div>
-        <p className="text-sm text-gray-600 mb-4">Use this key to authenticate API requests from your application</p>
+        <p className="text-sm text-slate-400 mb-4">Use this key to authenticate API requests from your application</p>
         
         <div className="flex items-center space-x-2 mb-4">
           <input
             type={showApiKey ? 'text' : 'password'}
             value={apiKey}
             readOnly
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm"
+            className="flex-1 px-4 py-2 border border-white/10 rounded-xl bg-white/5 text-slate-100 font-mono text-sm focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 transition"
           />
           <button
             onClick={onToggleKey}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            className="px-4 py-2 border border-white/10 bg-white/5 rounded-xl hover:bg-white/10 text-slate-300 transition"
           >
             {showApiKey ? 'Hide' : 'Show'}
           </button>
           <button
             onClick={() => onCopy(apiKey)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
+            className="px-4 py-2 bg-gradient-to-r from-violet-500 to-sky-500 text-white rounded-xl hover:from-violet-600 hover:to-sky-600 transition flex items-center space-x-2 shadow-[0_8px_30px_rgba(90,97,255,0.35)]"
           >
             <ClipboardDocumentIcon className="h-4 w-4" />
             <span>Copy</span>
           </button>
         </div>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-sm text-yellow-800">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+          <p className="text-sm text-yellow-300">
             <strong>Security Warning:</strong> Keep this API key secret. Never expose it in client-side code or public repositories.
           </p>
         </div>
       </div>
 
-      {/* API Documentation */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Start Guide</h3>
+      <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6 mb-6">
+        <h3 className="text-lg font-semibold text-slate-100 mb-4">Quick Start Guide</h3>
         
         <div className="space-y-4">
           <div>
-            <h4 className="font-medium text-gray-900 mb-2">1. Verify Consent</h4>
-            <p className="text-sm text-gray-600 mb-2">Check if a user has granted consent for a specific purpose</p>
-            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm text-green-400 font-mono">{codeExample}</pre>
+            <h4 className="font-medium text-slate-100 mb-2">1. Verify Consent</h4>
+            <p className="text-sm text-slate-400 mb-2">Check if a user has granted consent for a specific purpose</p>
+            <div className="bg-[#0A0B0F] rounded-xl p-4 overflow-x-auto border border-white/10">
+              <pre className="text-sm text-emerald-400 font-mono">{codeExample}</pre>
             </div>
           </div>
 
           <div>
-            <h4 className="font-medium text-gray-900 mb-2">2. Available Endpoints</h4>
+            <h4 className="font-medium text-slate-100 mb-2">2. Available Endpoints</h4>
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <code className="text-sm font-mono">POST /v1/consent/verify</code>
-                <span className="text-xs text-gray-600">Verify consent validity</span>
+              <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+                <code className="text-sm font-mono text-violet-400">POST /v1/consent/verify</code>
+                <span className="text-xs text-slate-400">Verify consent validity</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <code className="text-sm font-mono">GET /v1/consent/user/:userId</code>
-                <span className="text-xs text-gray-600">Get user consents</span>
+              <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+                <code className="text-sm font-mono text-violet-400">GET /v1/consent/user/:userId</code>
+                <span className="text-xs text-slate-400">Get user consents</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <code className="text-sm font-mono">POST /v1/consent/grant</code>
-                <span className="text-xs text-gray-600">Grant new consent</span>
+              <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+                <code className="text-sm font-mono text-violet-400">POST /v1/consent/grant</code>
+                <span className="text-xs text-slate-400">Grant new consent</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded">
-                <code className="text-sm font-mono">POST /v1/consent/revoke/:id</code>
-                <span className="text-xs text-gray-600">Revoke consent</span>
+              <div className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+                <code className="text-sm font-mono text-violet-400">POST /v1/consent/revoke/:id</code>
+                <span className="text-xs text-slate-400">Revoke consent</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* SDK Links */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Official SDKs</h3>
+      <div className="bg-gradient-to-r from-violet-500/10 to-sky-500/10 border border-violet-500/20 backdrop-blur-xl rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-slate-100 mb-4">Official SDKs</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-4">
-            <CodeBracketIcon className="h-8 w-8 text-blue-600 mb-2" />
-            <h4 className="font-medium text-gray-900 mb-1">JavaScript/TypeScript</h4>
-            <code className="text-xs text-gray-600">npm install @consentire/sdk</code>
+          <div className="border border-white/10 bg-white/5 rounded-xl p-4">
+            <CodeBracketIcon className="h-8 w-8 text-violet-400 mb-2" />
+            <h4 className="font-medium text-slate-100 mb-1">JavaScript/TypeScript</h4>
+            <code className="text-xs text-slate-400">npm install @consentire/sdk</code>
           </div>
-          <div className="bg-white rounded-lg p-4">
-            <CodeBracketIcon className="h-8 w-8 text-green-600 mb-2" />
-            <h4 className="font-medium text-gray-900 mb-1">Python</h4>
-            <code className="text-xs text-gray-600">pip install consentire</code>
+          <div className="border border-white/10 bg-white/5 rounded-xl p-4">
+            <CodeBracketIcon className="h-8 w-8 text-emerald-400 mb-2" />
+            <h4 className="font-medium text-slate-100 mb-1">Python</h4>
+            <code className="text-xs text-slate-400">pip install consentire</code>
           </div>
-          <div className="bg-white rounded-lg p-4">
-            <CodeBracketIcon className="h-8 w-8 text-purple-600 mb-2" />
-            <h4 className="font-medium text-gray-900 mb-1">Go</h4>
-            <code className="text-xs text-gray-600">go get consentire.io/sdk</code>
+          <div className="border border-white/10 bg-white/5 rounded-xl p-4">
+            <CodeBracketIcon className="h-8 w-8 text-sky-400 mb-2" />
+            <h4 className="font-medium text-slate-100 mb-1">Go</h4>
+            <code className="text-xs text-slate-400">go get consentire.io/sdk</code>
           </div>
         </div>
       </div>
@@ -668,7 +678,6 @@ function AnalyticsTab({ stats, controllerHash }: { stats: ComplianceStats | null
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        // Build query params with controller filtering
         const hashParam = controllerHash ? `&controllerHash=${controllerHash}` : ''
         
         const [trendsRes, purposesRes, statusRes] = await Promise.all([
@@ -698,41 +707,39 @@ function AnalyticsTab({ stats, controllerHash }: { stats: ComplianceStats | null
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">User Analytics</h2>
-        <p className="text-sm text-gray-600 mt-1">Real-time consent trends from database</p>
+        <h2 className="text-xl font-bold text-slate-100">User Analytics</h2>
+        <p className="text-sm text-slate-400 mt-1">Real-time consent trends from database</p>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading real analytics...</div>
+        <div className="text-center py-12 text-slate-400">Loading real analytics...</div>
       ) : (
         <>
-          {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Total Consents</p>
-              <p className="text-2xl font-bold text-gray-900">{totalConsents}</p>
-              <p className="text-xs text-blue-600 mt-1">All time</p>
+            <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-4">
+              <p className="text-sm text-slate-400 mb-1">Total Consents</p>
+              <p className="text-2xl font-bold text-slate-100">{totalConsents}</p>
+              <p className="text-xs text-violet-400 mt-1">All time</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Active Consents</p>
-              <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
-              <p className="text-xs text-green-600 mt-1">Currently granted</p>
+            <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-4">
+              <p className="text-sm text-slate-400 mb-1">Active Consents</p>
+              <p className="text-2xl font-bold text-slate-100">{activeCount}</p>
+              <p className="text-xs text-emerald-400 mt-1">Currently granted</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Revocation Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{revocationRate}%</p>
-              <p className="text-xs text-gray-600 mt-1">{revokedCount} revoked</p>
+            <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-4">
+              <p className="text-sm text-slate-400 mb-1">Revocation Rate</p>
+              <p className="text-2xl font-bold text-slate-100">{revocationRate}%</p>
+              <p className="text-xs text-slate-400 mt-1">{revokedCount} revoked</p>
             </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <p className="text-sm text-gray-600 mb-1">Compliance Score</p>
-              <p className="text-2xl font-bold text-gray-900">{stats?.complianceScore || 0}%</p>
-              <p className="text-xs text-green-600 mt-1">GDPR compliant</p>
+            <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-4">
+              <p className="text-sm text-slate-400 mb-1">Compliance Score</p>
+              <p className="text-2xl font-bold text-slate-100">{stats?.complianceScore || 0}%</p>
+              <p className="text-xs text-emerald-400 mt-1">GDPR compliant</p>
             </div>
           </div>
 
-          {/* Consent Trends */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent Trends (Last 30 Days)</h3>
+          <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Consent Trends (Last 30 Days)</h3>
             {trendData.length > 0 ? (
               <div className="h-64 flex items-end justify-between space-x-2">
                 {trendData.slice(0, 10).map((data, idx) => {
@@ -741,30 +748,29 @@ function AnalyticsTab({ stats, controllerHash }: { stats: ComplianceStats | null
                     <div key={idx} className="flex-1 flex flex-col items-center">
                       <div className="w-full flex flex-col items-center justify-end" style={{ height: '200px' }}>
                         <div 
-                          className="w-full bg-blue-500 rounded-t hover:bg-blue-600 transition cursor-pointer"
+                          className="w-full bg-gradient-to-t from-violet-500 to-sky-500 rounded-t hover:from-violet-600 hover:to-sky-600 transition cursor-pointer shadow-[0_0_15px_rgba(90,97,255,0.3)]"
                           style={{ height: `${(data.total / (maxValue || 1)) * 100}%` }}
                           title={`${data.total} consents on ${new Date(data.date).toLocaleDateString()}`}
                         />
                       </div>
-                      <p className="text-xs text-gray-600 mt-2">{new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                      <p className="text-xs text-slate-400 mt-2">{new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                     </div>
                   )
                 })}
               </div>
             ) : (
-              <p className="text-gray-500 text-center py-8">No trend data available</p>
+              <p className="text-slate-400 text-center py-8">No trend data available</p>
             )}
             <div className="flex items-center justify-center space-x-4 mt-4 text-sm">
               <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded mr-2"></div>
-                <span className="text-gray-600">Total Consents</span>
+                <div className="w-3 h-3 bg-gradient-to-r from-violet-500 to-sky-500 rounded mr-2"></div>
+                <span className="text-slate-400">Total Consents</span>
               </div>
             </div>
           </div>
 
-          {/* Purpose Breakdown */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Consent Purpose Breakdown</h3>
+          <div className="border border-white/10 bg-white/5 backdrop-blur-xl rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Consent Purpose Breakdown</h3>
             <div className="space-y-4">
               {purposeData.length > 0 ? (
                 purposeData.map((item, idx) => {
@@ -772,12 +778,12 @@ function AnalyticsTab({ stats, controllerHash }: { stats: ComplianceStats | null
                   return (
                     <div key={idx}>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900">{item.purpose}</span>
-                        <span className="text-sm text-gray-600">{item.total} ({percentage}%)</span>
+                        <span className="text-sm font-medium text-slate-100">{item.purpose}</span>
+                        <span className="text-sm text-slate-400">{item.total} ({percentage}%)</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-white/10 rounded-full h-2">
                         <div
-                          className="bg-blue-500 h-2 rounded-full"
+                          className="bg-gradient-to-r from-violet-500 to-sky-500 h-2 rounded-full shadow-[0_0_10px_rgba(90,97,255,0.4)]"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -785,7 +791,7 @@ function AnalyticsTab({ stats, controllerHash }: { stats: ComplianceStats | null
                   )
                 })
               ) : (
-                <p className="text-gray-500 text-center py-4">No purpose data available</p>
+                <p className="text-slate-400 text-center py-4">No purpose data available</p>
               )}
             </div>
           </div>
