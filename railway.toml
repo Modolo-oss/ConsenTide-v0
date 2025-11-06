@@ -7,7 +7,7 @@ source = "backend"
 
 [services.variables]
 PORT = "3001"
-NODE_ENV = "production"
+NODE_ENV = "development"
 JWT_SECRET = "${{JWT_SECRET}}"
 DATABASE_URL = "${{DATABASE_URL}}"
 
@@ -17,5 +17,5 @@ name = "frontend"
 source = "frontend"
 
 [services.variables]
-NEXT_PUBLIC_API_URL = "${{BACKEND_URL}}"
+NEXT_PUBLIC_API_URL = "${{backend.RAILWAY_PUBLIC_DOMAIN}}"
 NEXT_PUBLIC_ENV = "production"
