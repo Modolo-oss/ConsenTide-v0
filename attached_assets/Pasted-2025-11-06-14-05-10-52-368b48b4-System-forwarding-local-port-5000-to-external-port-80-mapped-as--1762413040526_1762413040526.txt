@@ -1,0 +1,161 @@
+2025-11-06 14:05:10.52
+368b48b4
+System
+forwarding local port 5000 to external port 80 (mapped as 1104)
+2025-11-06 14:05:10.52
+368b48b4
+System
+metasidecar: loaded enterprise status from environment is_enterprise=false
+2025-11-06 14:05:12.32
+368b48b4
+User
+> consentire@1.0.0 start
+2025-11-06 14:05:12.32
+368b48b4
+User
+> concurrently "npm run start:backend" "npm run start:frontend"
+2025-11-06 14:05:13.58
+368b48b4
+User
+[1]
+2025-11-06 14:05:13.58
+368b48b4
+User
+[1] > consentire@1.0.0 start:frontend
+2025-11-06 14:05:13.58
+368b48b4
+User
+[1] > cd frontend && npm run start
+2025-11-06 14:05:13.58
+368b48b4
+User
+[1]
+2025-11-06 14:05:13.58
+368b48b4
+User
+[0]
+2025-11-06 14:05:13.58
+368b48b4
+User
+[0] > consentire@1.0.0 start:backend
+2025-11-06 14:05:13.58
+368b48b4
+User
+[0] > cd backend && PORT=3001 npm run start
+2025-11-06 14:05:13.58
+368b48b4
+User
+[0]
+
+2025-11-06 14:05:13.93
+368b48b4
+User
+[0]
+2025-11-06 14:05:13.93
+368b48b4
+User
+[0] > @consentire/backend@1.0.0 start
+2025-11-06 14:05:13.93
+368b48b4
+User
+[0] > node dist/backend/src/index.js
+2025-11-06 14:05:13.93
+368b48b4
+User
+[0]
+2025-11-06 14:05:13.94
+368b48b4
+User
+[1]
+2025-11-06 14:05:13.94
+368b48b4
+User
+[1] > @consentire/frontend@1.0.0 start
+2025-11-06 14:05:13.94
+368b48b4
+User
+[1] > next start -p 5000 -H 0.0.0.0
+2025-11-06 14:05:13.94
+368b48b4
+User
+[1]
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0]
+2025-11-06 14:05:14.04
+368b48b4
+User
+node:internal/modules/esm/resolve:283
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] throw new ERR_MODULE_NOT_FOUND(
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] ^
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0]
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/workspace/backend/dist/backend/src/routes/auth' imported from /home/runner/workspace/backend/dist/backend/src/index.js
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at finalizeResolution (node:internal/modules/esm/resolve:283:11)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at moduleResolve (node:internal/modules/esm/resolve:952:10)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at defaultResolve (node:internal/modules/esm/resolve:1188:11)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:642:12)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at #cachedDefaultResolve (node:internal/modules/esm/loader:591:25)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at ModuleLoader.resolve (node:internal/modules/esm/loader:574:38)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:236:38)
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] at ModuleJob._link (node:internal/modules/esm/module_job:130:49) {
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] code: 'ERR_MODULE_NOT_FOUND',
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] url: 'file:///home/runner/workspace/backend/dist/backend/src/routes/auth'
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] }
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0]
+2025-11-06 14:05:14.04
+368b48b4
+User
+[0] Node.js v20.19.3
+2025-11-06 14:05:14.05
+368b48b4
+User
+[0] npm error Lifecycle script `start` failed with error:
