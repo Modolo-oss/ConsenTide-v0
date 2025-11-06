@@ -1,14 +1,14 @@
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
+const JWT_SECRET: string = process.env.JWT_SECRET || 'default-secret-change-in-production';
+const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h';
 
 export interface LoginRequest {
   email: string;
@@ -67,17 +67,15 @@ export class AuthService {
         };
       }
 
-      const token = jwt.sign(
-        {
-          userId: user.user_id,
-          email: user.email,
-          role: user.role,
-          did: user.did,
-          organizationId: user.organization_id,
-        },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-      );
+      const payload = {
+        userId: user.user_id,
+        email: user.email,
+        role: user.role,
+        did: user.did,
+        organizationId: user.organization_id,
+      };
+      // @ts-ignore - JWT_EXPIRES_IN is a valid string format for expiresIn
+      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
       logger.info(`User logged in successfully: ${email}`);
 

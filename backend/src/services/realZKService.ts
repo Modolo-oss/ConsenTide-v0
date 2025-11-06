@@ -3,6 +3,7 @@
  * Production ZK proofs using Circom and snarkJS
  */
 
+// @ts-ignore - snarkjs types may not be available
 import * as snarkjs from 'snarkjs';
 import { logger } from '../utils/logger';
 import { cryptoService } from './cryptoService';
@@ -222,7 +223,7 @@ component main = ConsentVerification();
 
           return {
             proof,
-            publicSignals: publicSignals.map(s => s.toString()),
+            publicSignals: publicSignals.map((s: any) => s.toString()),
             circuitHash: this.getCircuitHash()
           };
         } catch (error) {

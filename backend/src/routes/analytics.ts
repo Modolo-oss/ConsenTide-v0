@@ -80,7 +80,7 @@ analyticsRouter.get('/trends', authenticateUser, async (req: Request, res: Respo
     const result = await databaseService.query(query, params);
 
     res.json({
-      trends: result.rows.map(row => ({
+      trends: result.rows.map((row: any) => ({
         date: row.date,
         total: parseInt(row.total),
         granted: parseInt(row.granted),
@@ -128,7 +128,7 @@ analyticsRouter.get('/purposes', authenticateUser, async (req: Request, res: Res
     const result = await databaseService.query(query, params);
 
     res.json({
-      purposes: result.rows.map(row => ({
+      purposes: result.rows.map((row: any) => ({
         purpose: row.purpose_hash.substring(0, 16) + '...',
         total: parseInt(row.total),
         active: parseInt(row.active)
@@ -173,7 +173,7 @@ analyticsRouter.get('/status-distribution', authenticateUser, async (req: Reques
     const result = await databaseService.query(query, params);
 
     res.json({
-      distribution: result.rows.map(row => ({
+      distribution: result.rows.map((row: any) => ({
         status: row.status,
         count: parseInt(row.count)
       }))
@@ -245,7 +245,7 @@ analyticsRouter.get('/controller/:controllerHash', authenticateUser, async (req:
     const summary = summaryResult.rows[0];
     const recentConsents = recentResult.rows;
 
-    const last30Days = recentConsents.filter(c => {
+    const last30Days = recentConsents.filter((c: any) => {
       const grantedDate = new Date(c.granted_at);
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -263,8 +263,8 @@ analyticsRouter.get('/controller/:controllerHash', authenticateUser, async (req:
       },
       recentActivity: {
         last30DaysCount: last30Days.length,
-        last30DaysGranted: last30Days.filter(c => c.status === 'granted').length,
-        last30DaysRevoked: last30Days.filter(c => c.status === 'revoked').length
+        last30DaysGranted: last30Days.filter((c: any) => c.status === 'granted').length,
+        last30DaysRevoked: last30Days.filter((c: any) => c.status === 'revoked').length
       }
     });
   } catch (error: any) {
