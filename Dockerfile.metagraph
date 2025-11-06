@@ -1,0 +1,26 @@
+# ConsenTide Metagraph Dockerfile
+FROM openjdk:11-jdk-slim
+
+# Install Scala and sbt
+RUN apt-get update && apt-get install -y curl wget && \
+    curl -fL https://github.com/coursier/launchers/raw/master/cs-x86_64-pc-linux.gz | gzip -d > cs && \
+    chmod +x cs && \
+    ./cs setup --yes && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy metagraph source
+COPY metagraph/ ./
+
+# Build the metagraph
+RUN ./sbt compile
+
+# Create certificates directory
+RUN mkdir -p /app/certs
+
+# Expose ports
+EXPOSE 9200 9201 9202
+
+# Start the metagraph
+CMD ["./sbt", "run"]
