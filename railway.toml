@@ -1,23 +1,17 @@
+# ConsenTide Railway Configuration
+# Frontend Service
 [build]
-builder = "dockerfile"
+builder = "nixpacks"
 
 [deploy]
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "always"
 
-[[services]]
-name = "consentire-frontend"
-source = "Dockerfile.frontend"
-
-[services.variables]
-NEXT_PUBLIC_API_URL = "${{BACKEND_URL}}"
-NEXT_PUBLIC_METAGRAPH_URL = "${{METAGRAPH_URL}}"
-NEXT_PUBLIC_ENV = "production"
-
+# Backend Service
 [[services]]
 name = "consentire-backend"
-source = "Dockerfile.backend"
+source = "backend"
 
 [services.variables]
 PORT = "3001"
@@ -27,20 +21,17 @@ METAGRAPH_L0_URL = "${{METAGRAPH_URL}}"
 JWT_SECRET = "${{JWT_SECRET}}"
 NODE_ENV = "production"
 
+# Frontend Service  
 [[services]]
-name = "consentire-metagraph"
-source = "Dockerfile.metagraph"
+name = "consentire-frontend"
+source = "frontend"
 
 [services.variables]
-CL_APP_ENV = "prod"
-CL_PUBLIC_HTTP_PORT = "9200"
-CL_P2P_HTTP_PORT = "9201"
-CL_CLI_HTTP_PORT = "9202"
-CL_KEYSTORE = "/app/certs/node1.p12"
-CL_KEYALIAS = "node1"
-CL_PASSWORD = "${{NODE_PASSWORD}}"
-CL_COLLATERAL = "0"
+NEXT_PUBLIC_API_URL = "${{BACKEND_URL}}"
+NEXT_PUBLIC_METAGRAPH_URL = "${{METAGRAPH_URL}}"
+NEXT_PUBLIC_ENV = "production"
 
+# PostgreSQL Service
 [[services]]
 name = "postgres"
 source = "postgres:15"
