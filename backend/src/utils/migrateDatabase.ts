@@ -29,8 +29,8 @@ export async function migrateDatabase(): Promise<void> {
 
     logger.info('📋 Creating database schema...');
 
-    // Read schema file (relative to project root)
-    const schemaPath = process.cwd() + '/database/schema.sql';
+    // Read schema file (relative to backend directory in Railway)
+    const schemaPath = process.cwd() + '/../database/schema.sql';
     const schemaSQL = readFileSync(schemaPath, 'utf8');
 
     // Split SQL commands and execute them
@@ -46,14 +46,6 @@ export async function migrateDatabase(): Promise<void> {
     }
 
     logger.info('✅ Database schema created successfully');
-
-    // Create demo account
-    await databaseService.query(`
-      INSERT INTO users (email, password, name)
-      VALUES ('demo@example.com', 'password123', 'Demo User');
-    `);
-
-    logger.info('✅ Demo account created successfully');
 
   } catch (error) {
     logger.error('❌ Database migration failed:', error);
