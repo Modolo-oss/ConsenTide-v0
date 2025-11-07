@@ -269,7 +269,7 @@ export default function RegisterPage() {
           {/* Demo Credentials Notice */}
           <div className="mt-8 rounded-lg bg-slate-800/30 border border-slate-700/50 p-4">
             <div className="flex items-start space-x-3">
-              <CheckBadgeIcon className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
+              <UserIcon className="h-5 w-5 text-violet-400 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-slate-300 mb-1">
                   Demo Account Available
