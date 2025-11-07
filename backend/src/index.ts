@@ -19,6 +19,7 @@ import { analyticsRouter } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 import { createDemoAccounts } from './utils/demoSetup';
+import { migrateDatabase } from './utils/migrateDatabase';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -145,9 +146,13 @@ app.use((req: Request, res: Response) => {
 // Error handler
 app.use(errorHandler);
 
-// Initialize demo accounts (for hackathon evaluation)
-createDemoAccounts().catch(error => {
-  logger.error('Failed to create demo accounts:', error);
+// Initialize database schema and demo accounts (for hackathon evaluation)
+migrateDatabase().then(() => {
+  createDemoAccounts().catch(error => {
+    logger.error('Failed to create demo accounts:', error);
+  });
+}).catch(error => {
+  logger.error('Failed to migrate database:', error);
 });
 
 // Start server
