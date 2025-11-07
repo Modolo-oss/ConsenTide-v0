@@ -39,6 +39,7 @@ const allowedOrigins = [
   'http://localhost:5000',
   'https://consentide.live',
   'http://consentide.live',
+  'https://consentirefrontend-production.up.railway.app',
   process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
 ].filter(Boolean);
 
