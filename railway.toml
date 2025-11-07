@@ -20,5 +20,7 @@ name = "frontend"
 source = "frontend"
 
 [services.variables]
+PORT = "3000"
 NEXT_PUBLIC_API_URL = "${{backend.RAILWAY_PUBLIC_DOMAIN}}"
 NEXT_PUBLIC_ENV = "production"
+NEXT_PUBLIC_METAGRAPH_URL = "http://localhost:9200"

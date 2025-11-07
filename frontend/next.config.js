@@ -4,7 +4,6 @@ const nextConfig = {
   transpilePackages: ['@consentire/shared'],
   
   // Production optimizations
-  output: 'standalone',
   compress: true,
   poweredByHeader: false,
   
