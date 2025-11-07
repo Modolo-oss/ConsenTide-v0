@@ -5,12 +5,7 @@
 
 import { Pool } from 'pg';
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { logger } from './logger';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -37,15 +32,15 @@ export async function migrateDatabase(): Promise<void> {
 
     logger.info('📋 Creating database schema...');
 
-    // Read schema file
-    const schemaPath = join(__dirname, '../../database/schema.sql');
+    // Read schema file (relative to project root using __dirname equivalent)
+    const schemaPath = process.cwd() + '/database/schema.sql';
     const schemaSQL = readFileSync(schemaPath, 'utf8');
 
     // Split SQL commands and execute them
     const commands = schemaSQL
       .split(';')
-      .map(cmd => cmd.trim())
-      .filter(cmd => cmd.length > 0 && !cmd.startsWith('--'));
+      .map((cmd: string) => cmd.trim())
+      .filter((cmd: string) => cmd.length > 0 && !cmd.startsWith('--'));
 
     for (const command of commands) {
       if (command.trim()) {

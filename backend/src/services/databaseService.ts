@@ -19,7 +19,7 @@ interface DatabaseConfig {
   database: string;
   username: string;
   password: string;
-  ssl?: boolean;
+  ssl?: boolean | object;
 }
 
 class DatabaseService {
@@ -38,7 +38,7 @@ class DatabaseService {
         database: process.env.PGDATABASE || process.env.DB_NAME || 'consentire',
         username: process.env.PGUSER || process.env.DB_USER || 'postgres',
         password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'postgres',
-        ssl: true
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : true
       };
 
       this.pool = new Pool(config);
