@@ -10,22 +10,7 @@ import { logger } from './logger';
 
 export async function migrateDatabase(): Promise<void> {
   try {
-    logger.info('🔄 Checking database schema...');
-
-    // Check if users table exists
-    const result = await databaseService.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_name = 'users'
-      );
-    `);
-
-    const schemaExists = result.rows[0].exists;
-
-    if (schemaExists) {
-      logger.info('✅ Database schema already exists');
-      return;
-    }
+    logger.info('🔄 Starting database migration...');
 
     logger.info('📋 Creating database schema...');
 
