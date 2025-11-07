@@ -1,53 +1,96 @@
 /**
  * Demo Accounts Setup
- * Auto-creates demo accounts in Supabase for hackathon evaluation
+ * Auto-creates demo accounts in PostgreSQL for testing
  */
 
-import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { databaseService } from '../services/databaseService';
 import { logger } from './logger';
 
 interface DemoAccount {
   email: string;
   password: string;
   role: string;
-  fullName?: string;
-  organizationName?: string;
+  name?: string;
+  publicKey?: string;
 }
 
 const DEMO_ACCOUNTS: DemoAccount[] = [
   {
-    email: 'admin@consentire.io',
+    email: 'demo@consentire.com',
+    password: 'demo123',
+    role: 'user',
+    name: 'Demo User',
+    publicKey: '042e123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef'
+  },
+  {
+    email: 'admin@consentire.com',
     password: 'admin123',
     role: 'admin',
-    fullName: 'Admin User'
+    name: 'Admin User',
+    publicKey: '042e987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba'
   },
   {
-    email: 'user@consentire.io',
-    password: 'user123',
-    role: 'user',
-    fullName: 'John Doe'
-  },
-  {
-    email: 'org@consentire.io',
-    password: 'org123',
-    role: 'organization',
-    organizationName: 'Acme Corp'
-  },
-  {
-    email: 'regulator@consentire.io',
-    password: 'reg123',
-    role: 'regulator',
-    fullName: 'Jane Smith'
+    email: 'controller@consentire.com',
+    password: 'controller123',
+    role: 'controller',
+    name: 'Controller User',
+    publicKey: '042eabcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef'
   }
 ];
 
+function generateUserId(email: string): string {
+  return `user_${crypto.createHash('sha256').update(email.toLowerCase()).digest('hex').substring(0, 32)}`;
+}
+
+function hashEmail(email: string): string {
+  return crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').substring(0, 64);
+}
+
+function generateDID(publicKey: string): string {
+  return `did:consentire:${crypto.createHash('sha256').update(publicKey).digest('hex').substring(0, 32)}`;
+}
+
 export async function createDemoAccounts(): Promise<void> {
   try {
-    // Allow demo account creation in production for hackathon evaluation
-    // if (process.env.NODE_ENV === 'production') {
-    //   logger.info('Skipping demo account creation in production');
-    //   return;
-    // }
+    logger.info('🎭 Creating demo accounts...');
+
+    for (const account of DEMO_ACCOUNTS) {
+      try {
+        const userId = generateUserId(account.email);
+        const emailHash = hashEmail(account.email);
+        const did = generateDID(account.publicKey || 'demo-key');
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(account.password, 10);
+
+        // Insert user first
+        await databaseService.query(`
+          INSERT INTO users (id, email_hash, public_key, did, created_at)
+          VALUES ($1, $2, $3, $4, NOW())
+          ON CONFLICT (id) DO NOTHING
+        `, [userId, emailHash, account.publicKey, did]);
+
+        // Insert auth credentials
+        await databaseService.query(`
+          INSERT INTO auth_credentials (user_id, email, password_hash, role, user_type, created_at)
+          VALUES ($1, $2, $3, $4, 'individual', NOW())
+          ON CONFLICT (user_id) DO NOTHING
+        `, [userId, account.email, hashedPassword, account.role]);
+
+        logger.info(`✅ Created demo account: ${account.email} (ID: ${userId})`);
+      } catch (error) {
+        logger.warn(`⚠️ Failed to create demo account ${account.email}:`, error);
+      }
+    }
+
+    logger.info('🎭 Demo accounts setup completed');
+  } catch (error) {
+    logger.error('❌ Demo account creation failed:', error);
+    throw error;
+  }
+}
 
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

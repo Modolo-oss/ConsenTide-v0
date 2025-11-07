@@ -20,6 +20,21 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 -- ==============================================
+-- AUTH CREDENTIALS TABLE
+-- ==============================================
+CREATE TABLE IF NOT EXISTS auth_credentials (
+    user_id VARCHAR(64) PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'user',
+    organization_id VARCHAR(255),
+    user_type VARCHAR(20) DEFAULT 'individual',
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- ==============================================
 -- CONTROLLERS TABLE
 -- ==============================================
 CREATE TABLE IF NOT EXISTS controllers (
