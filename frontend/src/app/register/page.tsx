@@ -9,8 +9,7 @@ import {
   EyeSlashIcon,
   EnvelopeIcon,
   KeyIcon,
-  UserIcon,
-  CheckBadgeIcon
+  UserIcon
 } from '@heroicons/react/24/outline'
 import { api } from '@/lib/api'
 
@@ -32,8 +31,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    publicKey: ''
+    confirmPassword: ''
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -58,10 +56,6 @@ export default function RegisterPage() {
       newErrors.confirmPassword = 'Passwords do not match'
     }
 
-    if (!formData.publicKey) {
-      newErrors.publicKey = 'Public key is required'
-    }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -73,10 +67,13 @@ export default function RegisterPage() {
     setLoading(true)
     setErrors({})
 
+    // Generate random public key for demo
+    const randomPublicKey = '04' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')
+
     try {
       const response = await api.post('/users/register', {
         email: formData.email,
-        publicKey: formData.publicKey,
+        publicKey: randomPublicKey,
         metadata: {
           registeredAt: new Date().toISOString()
         }
@@ -129,7 +126,7 @@ export default function RegisterPage() {
               Create Account
             </h1>
             <p className="text-slate-400">
-              Join ConsenTide to manage your privacy rights
+              Join ConsenTide and start managing your privacy rights
             </p>
           </div>
 
@@ -157,31 +154,6 @@ export default function RegisterPage() {
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-              )}
-            </div>
-
-            {/* Public Key Field */}
-            <div>
-              <label htmlFor="publicKey" className="block text-sm font-medium text-slate-300 mb-2">
-                Public Key
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <CheckBadgeIcon className="h-5 w-5 text-slate-500" />
-                </div>
-                <input
-                  id="publicKey"
-                  type="text"
-                  value={formData.publicKey}
-                  onChange={(e) => setFormData(prev => ({ ...prev, publicKey: e.target.value }))}
-                  className={`block w-full pl-10 pr-3 py-3 bg-slate-800/50 border rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${
-                    errors.publicKey ? 'border-red-500' : 'border-slate-700'
-                  }`}
-                  placeholder="Your public key for consent verification"
-                />
-              </div>
-              {errors.publicKey && (
-                <p className="mt-1 text-sm text-red-400">{errors.publicKey}</p>
               )}
             </div>
 
@@ -301,6 +273,9 @@ export default function RegisterPage() {
               <div>
                 <p className="text-sm font-medium text-slate-300 mb-1">
                   Demo Account Available
+                </p>
+                <p className="text-xs text-slate-400 mb-1">
+                  Public key will be auto-generated for demo purposes
                 </p>
                 <p className="text-xs text-slate-400">
                   For testing: demo@consentire.com / demo123
