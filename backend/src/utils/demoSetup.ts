@@ -48,14 +48,33 @@ function hashEmail(email: string): string {
   return crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').substring(0, 64);
 }
 
-function generateDID(publicKey: string): string {
-  return `did:consentire:${crypto.createHash('sha256').update(publicKey).digest('hex').substring(0, 32)}`;
+const DEMO_CONTROLLERS = [
+  {
+    organizationName: 'TechCorp Analytics',
+    organizationId: 'TECH001',
+    publicKey: '042e123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef'
+  },
+  {
+    organizationName: 'DataFlow Solutions',
+    organizationId: 'DATA001',
+    publicKey: '042e987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba987654321fedcba'
+  },
+  {
+    organizationName: 'PrivacyFirst Ltd',
+    organizationId: 'PRIV001',
+    publicKey: '042eabcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef123456789abcdef'
+  }
+];
+
+function generateControllerHash(organizationId: string): string {
+  return crypto.createHash('sha256').update(organizationId.toLowerCase()).digest('hex').substring(0, 64);
 }
 
 export async function createDemoAccounts(): Promise<void> {
   try {
-    logger.info('🎭 Creating demo accounts...');
+    logger.info('🎭 Creating demo accounts and controllers...');
 
+    // Create demo users
     for (const account of DEMO_ACCOUNTS) {
       try {
         const userId = generateUserId(account.email);
@@ -85,7 +104,25 @@ export async function createDemoAccounts(): Promise<void> {
       }
     }
 
-    logger.info('🎭 Demo accounts setup completed');
+    // Create demo controllers
+    for (const controller of DEMO_CONTROLLERS) {
+      try {
+        const controllerId = `ctrl_${crypto.createHash('sha256').update(controller.organizationId).digest('hex').substring(0, 32)}`;
+        const controllerHash = generateControllerHash(controller.organizationId);
+
+        await databaseService.query(`
+          INSERT INTO controllers (id, organization_name, organization_id, controller_hash, public_key, created_at)
+          VALUES ($1, $2, $3, $4, $5, NOW())
+          ON CONFLICT (organization_id) DO NOTHING
+        `, [controllerId, controller.organizationName, controller.organizationId, controllerHash, controller.publicKey]);
+
+        logger.info(`✅ Created demo controller: ${controller.organizationName} (ID: ${controllerId})`);
+      } catch (error) {
+        logger.warn(`⚠️ Failed to create demo controller ${controller.organizationName}:`, error);
+      }
+    }
+
+    logger.info('🎭 Demo accounts and controllers setup completed');
   } catch (error) {
     logger.error('❌ Demo account creation failed:', error);
     throw error;

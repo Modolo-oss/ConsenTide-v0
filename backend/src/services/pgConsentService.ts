@@ -68,26 +68,6 @@ class PgConsentService {
         timestamp
       );
 
-      // Check if tables exist, if not, provide demo mode response
-      try {
-        await databaseService.query('SELECT 1 FROM consents LIMIT 1');
-        await databaseService.query('SELECT 1 FROM controllers LIMIT 1');
-      } catch (tableError: any) {
-        if (tableError.code === '42P01') {
-          logger.warn('Database tables do not exist, returning demo consent response', { userId, controllerId: request.controllerId });
-
-          // Return demo response for missing tables
-          return {
-            consentId,
-            hgtpTxHash: `demo_tx_${consentId.substring(0, 16)}`,
-            status: ConsentStatus.GRANTED,
-            expiresAt: request.expiresAt,
-            grantedAt: timestamp
-          };
-        }
-        throw tableError;
-      }
-
       const existingConsentResult = await databaseService.query(
         `SELECT consent_id AS id FROM consents
          WHERE user_id = $1
@@ -187,30 +167,7 @@ class PgConsentService {
         grantedAt: timestamp
       };
 
-    } catch (error: any) {
-      // Check if this is a table not found error and we haven't already handled it
-      if (error.code === '42P01' && !error.message.includes('demo')) {
-        logger.warn('Database tables do not exist during consent grant, using demo mode', { userId, controllerId: request.controllerId });
-
-        // Generate a demo consent ID and return success
-        const controllerHash = generateControllerHash(request.controllerId);
-        const timestamp = Date.now();
-        const consentId = generateConsentId(
-          userId,
-          request.controllerId,
-          request.purpose,
-          timestamp
-        );
-
-        return {
-          consentId,
-          hgtpTxHash: `demo_tx_${consentId.substring(0, 16)}`,
-          status: ConsentStatus.GRANTED,
-          expiresAt: request.expiresAt,
-          grantedAt: timestamp
-        };
-      }
-
+    } catch (error) {
       logger.error('Failed to grant consent', { error, userId, controllerId: request.controllerId });
       throw error;
     }
@@ -315,24 +272,6 @@ class PgConsentService {
     logger.info('Revoking consent via PostgreSQL', { consentId: request.consentId, userId });
 
     try {
-      // Check if tables exist, if not, provide demo mode response
-      try {
-        await databaseService.query('SELECT 1 FROM consents LIMIT 1');
-      } catch (tableError: any) {
-        if (tableError.code === '42P01') {
-          logger.warn('Consents table does not exist, returning demo revoke response', { userId, consentId: request.consentId });
-
-          const revokedAt = Date.now();
-          return {
-            consentId: request.consentId,
-            status: ConsentStatus.REVOKED,
-            revokedAt,
-            hgtpTxHash: `demo_revoke_tx_${request.consentId.substring(0, 16)}`
-          };
-        }
-        throw tableError;
-      }
-
       const consentResult = await databaseService.query(
         'SELECT * FROM consents WHERE consent_id = $1 AND user_id = $2',
         [request.consentId, userId]
@@ -395,20 +334,7 @@ class PgConsentService {
         hgtpTxHash: hgtpResult.transactionHash
       };
 
-    } catch (error: any) {
-      // Check if this is a table not found error and we haven't already handled it
-      if (error.code === '42P01' && !error.message.includes('demo')) {
-        logger.warn('Database tables do not exist during consent revoke, using demo mode', { userId, consentId: request.consentId });
-
-        const revokedAt = Date.now();
-        return {
-          consentId: request.consentId,
-          status: ConsentStatus.REVOKED,
-          revokedAt,
-          hgtpTxHash: `demo_revoke_tx_${request.consentId.substring(0, 16)}`
-        };
-      }
-
+    } catch (error) {
       logger.error('Failed to revoke consent', { error, consentId: request.consentId, userId });
       throw error;
     }
@@ -429,12 +355,7 @@ class PgConsentService {
       );
 
       return result.rows;
-    } catch (error: any) {
-      // If table doesn't exist, return empty array for demo mode
-      if (error.code === '42P01' && error.message.includes('consents')) {
-        logger.warn('Consents table does not exist, returning empty data for demo mode', { userId });
-        return [];
-      }
+    } catch (error) {
       logger.error('Failed to get active consents', { error, userId });
       throw error;
     }
@@ -528,27 +449,7 @@ class PgConsentService {
         gdprArticle30,
         lastAudit: Date.now()
       };
-    } catch (error: any) {
-      // If table doesn't exist, return default metrics for demo mode
-      if (error.code === '42P01' && (error.message.includes('consents') || error.message.includes('audit_logs'))) {
-        logger.warn('Consent/audit tables do not exist, returning default metrics for demo mode', { controllerHash });
-        return {
-          controllerHash,
-          complianceScore: 75,
-          totalConsents: 0,
-          activeConsents: 0,
-          revokedConsents: 0,
-          expiredConsents: 0,
-          gdprArticle7: false,
-          gdprArticle12: false,
-          gdprArticle13: false,
-          gdprArticle17: true, // API exists
-          gdprArticle20: true, // API exists
-          gdprArticle25: false,
-          gdprArticle30: false,
-          lastAudit: Date.now()
-        };
-      }
+    } catch (error) {
       logger.error('Failed to get compliance metrics', { error, controllerHash });
       throw error;
     }
@@ -639,46 +540,7 @@ class PgConsentService {
         recentConsents,
         auditTrail: recentAuditLogs
       };
-    } catch (error: any) {
-      // If tables don't exist, return default report for demo mode
-      if (error.code === '42P01' || error.message === 'Controller not found') {
-        logger.warn('Controller/consent tables do not exist, returning default report for demo mode', { controllerHash });
-        return {
-          controller: {
-            id: 'demo-controller',
-            organizationName: 'Demo Organization',
-            organizationId: 'demo-org',
-            controllerHash: controllerHash,
-            createdAt: new Date().toISOString()
-          },
-          metrics: {
-            controllerHash,
-            complianceScore: 75,
-            totalConsents: 0,
-            activeConsents: 0,
-            revokedConsents: 0,
-            expiredConsents: 0,
-            gdprArticle7: false,
-            gdprArticle12: false,
-            gdprArticle13: false,
-            gdprArticle17: true,
-            gdprArticle20: true,
-            gdprArticle25: false,
-            gdprArticle30: false,
-            lastAudit: Date.now()
-          },
-          summary: {
-            totalConsents: 0,
-            activeConsents: 0,
-            revokedConsents: 0,
-            expiredConsents: 0,
-            statusCounts: { granted: 0, revoked: 0, expired: 0 },
-            lastUpdated: Date.now()
-          },
-          recentConsents: [],
-          auditTrail: []
-        };
-      }
+    } catch (error) {
       logger.error('Failed to build compliance report', { error, controllerHash });
       throw error;
     }

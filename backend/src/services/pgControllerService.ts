@@ -105,12 +105,7 @@ class PgControllerService {
         totalConsents: parseInt(row.total_consents) || 0,
         lastAudit: row.last_audit
       }));
-    } catch (error: any) {
-      // If table doesn't exist, return empty array for demo mode
-      if (error.code === '42P01' && (error.message.includes('controllers') || error.message.includes('consents'))) {
-        logger.warn('Controllers table does not exist, returning empty data for demo mode');
-        return [];
-      }
+    } catch (error) {
       logger.error('getAllControllers failed', { error });
       throw error;
     }
@@ -140,17 +135,7 @@ class PgControllerService {
         complianceScore: parseFloat(stats.compliance_score) || 75.0,
         lastUpdated: new Date().toISOString()
       };
-    } catch (error: any) {
-      // If tables don't exist, return default stats for demo mode
-      if (error.code === '42P01' && (error.message.includes('controllers') || error.message.includes('consents'))) {
-        logger.warn('Controller tables do not exist, returning default stats for demo mode');
-        return {
-          totalControllers: 0,
-          activeConsents: 0,
-          complianceScore: 75.0,
-          lastUpdated: new Date().toISOString()
-        };
-      }
+    } catch (error) {
       logger.error('getControllerStats failed', { error });
       throw error;
     }
