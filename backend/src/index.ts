@@ -146,14 +146,18 @@ app.use((req: Request, res: Response) => {
 // Error handler
 app.use(errorHandler);
 
-// TEMPORARY: Skip database migration and seeding for simplified auth
-// migrateDatabase().then(() => {
-//   createDemoAccounts().catch(error => {
-//     logger.error('Failed to create demo accounts:', error);
-//   });
-// }).catch(error => {
-//   logger.error('Failed to migrate database:', error);
-// });
+// Initialize database and demo accounts
+migrateDatabase().then(() => {
+  logger.info('Database migration completed');
+  createDemoAccounts().then(() => {
+    logger.info('Demo accounts created successfully');
+  }).catch(error => {
+    logger.error('Failed to create demo accounts:', error);
+  });
+}).catch(error => {
+  logger.error('Failed to migrate database:', error);
+  // Continue anyway - services will handle missing tables gracefully
+});
 
 // Start server
 app.listen(PORT, () => {

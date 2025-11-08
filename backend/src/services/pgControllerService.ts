@@ -86,7 +86,7 @@ class PgControllerService {
   async getAllControllers() {
     try {
       const result = await this.pool.query(`
-        SELECT 
+        SELECT
           c.id,
           c.organization_name as name,
           c.controller_hash,
@@ -97,7 +97,7 @@ class PgControllerService {
         GROUP BY c.id, c.organization_name, c.controller_hash, c.created_at
         ORDER BY c.created_at DESC
       `);
-      
+
       return result.rows.map(row => ({
         id: row.id,
         name: row.organization_name || row.name,
@@ -105,7 +105,12 @@ class PgControllerService {
         totalConsents: parseInt(row.total_consents) || 0,
         lastAudit: row.last_audit
       }));
-    } catch (error) {
+    } catch (error: any) {
+      // If table doesn't exist, return empty array for demo mode
+      if (error.code === '42P01' && (error.message.includes('controllers') || error.message.includes('consents'))) {
+        logger.warn('Controllers table does not exist, returning empty data for demo mode');
+        return [];
+      }
       logger.error('getAllControllers failed', { error });
       throw error;
     }
@@ -117,17 +122,17 @@ class PgControllerService {
   async getControllerStats() {
     try {
       const result = await this.pool.query(`
-        SELECT 
+        SELECT
           COUNT(DISTINCT c.id) as total_controllers,
           COUNT(DISTINCT CASE WHEN co.status = 'granted' THEN co.consent_id END) as active_consents,
-          AVG(CASE 
+          AVG(CASE
             WHEN COUNT(co.consent_id) > 0 THEN 85
             ELSE 70
           END) as compliance_score
         FROM controllers c
         LEFT JOIN consents co ON c.controller_hash = co.controller_hash
       `);
-      
+
       const stats = result.rows[0];
       return {
         totalControllers: parseInt(stats.total_controllers) || 0,
@@ -135,7 +140,17 @@ class PgControllerService {
         complianceScore: parseFloat(stats.compliance_score) || 75.0,
         lastUpdated: new Date().toISOString()
       };
-    } catch (error) {
+    } catch (error: any) {
+      // If tables don't exist, return default stats for demo mode
+      if (error.code === '42P01' && (error.message.includes('controllers') || error.message.includes('consents'))) {
+        logger.warn('Controller tables do not exist, returning default stats for demo mode');
+        return {
+          totalControllers: 0,
+          activeConsents: 0,
+          complianceScore: 75.0,
+          lastUpdated: new Date().toISOString()
+        };
+      }
       logger.error('getControllerStats failed', { error });
       throw error;
     }
