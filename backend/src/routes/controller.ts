@@ -85,7 +85,7 @@ controllerRouter.get('/stats', authenticateUser, async (req: Request, res: Respo
   }
 });
 
-controllerRouter.get('/:controllerId', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
+controllerRouter.get('/:controllerId', authenticateUser, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { controllerId } = req.params;
     const data = await pgControllerService.getController(controllerId);
