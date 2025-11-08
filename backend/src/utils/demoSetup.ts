@@ -48,6 +48,10 @@ function hashEmail(email: string): string {
   return crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').substring(0, 64);
 }
 
+function generateDID(publicKey: string): string {
+  return `did:consentire:${crypto.createHash('sha256').update(publicKey).digest('hex').substring(0, 32)}`;
+}
+
 const DEMO_CONTROLLERS = [
   {
     organizationName: 'TechCorp Analytics',

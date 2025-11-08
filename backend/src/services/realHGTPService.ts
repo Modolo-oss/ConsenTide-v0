@@ -73,27 +73,29 @@ class RealHGTPService {
       publicKey: process.env.CONSTELLATION_PUBLIC_KEY || ''
     };
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    // FORCE PRODUCTION MODE - ALWAYS require real blockchain transactions
+    const isProduction = process.env.FORCE_REAL_TRANSACTIONS === 'true' || process.env.NODE_ENV === 'production';
 
-    // PRODUCTION MODE: Validate required credentials
-    if (isProduction && (!this.config.privateKey || !this.config.publicKey || !this.config.walletAddress)) {
-      logger.error('HGTP Service PRODUCTION MODE requires credentials', {
+    // ALWAYS validate required credentials - NO DEMO MODE
+    if (!this.config.privateKey || !this.config.publicKey || !this.config.walletAddress) {
+      logger.error('HGTP Service REQUIRES REAL BLOCKCHAIN CREDENTIALS', {
         missingKeys: {
           privateKey: !this.config.privateKey,
           publicKey: !this.config.publicKey,
           walletAddress: !this.config.walletAddress
-        }
+        },
+        instruction: 'Set CONSTELLATION_PRIVATE_KEY, CONSTELLATION_PUBLIC_KEY, and CONSTELLATION_WALLET_ADDRESS environment variables'
       });
-      throw new Error('CONSTELLATION_PRIVATE_KEY, CONSTELLATION_PUBLIC_KEY, and CONSTELLATION_WALLET_ADDRESS are required for production mode');
+      throw new Error('REAL BLOCKCHAIN CREDENTIALS REQUIRED - NO DEMO MODE ALLOWED');
     }
 
     // Log configuration status (without exposing secrets)
-    logger.info(`Initializing HGTP Service - ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} MODE`, {
+    logger.info(`🚀 HGTP Service - REAL BLOCKCHAIN MODE (NO DEMO)`, {
       l0Node: this.config.nodeUrl,
       l1Node: this.config.l1Url,
       networkId: this.config.networkId,
       walletConfigured: !!(this.config.privateKey && this.config.publicKey && this.config.walletAddress),
-      mode: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+      mode: 'REAL BLOCKCHAIN - PRODUCTION ONLY'
     });
 
     // L0 client for node info and metadata
@@ -120,34 +122,33 @@ class RealHGTPService {
   }
 
   /**
-   * Initialize connection to Constellation network (PRODUCTION MODE)
+   * Initialize connection to Constellation network (REAL BLOCKCHAIN MODE ONLY)
    */
   private async initializeConnection() {
-    const isProduction = process.env.NODE_ENV === 'production';
-    
-    if (isProduction) {
-      // Test HTTP connection - MUST succeed in production mode
-      const connected = await this.testConnection();
-      
-      if (!connected) {
-        throw new Error('Failed to connect to Constellation Mainnet - cannot operate in production mode without connection');
-      }
-      
-      // Initialize WebSocket for real-time updates (best effort - not blocking)
-      try {
-        await this.initializeWebSocket();
-      } catch (error) {
-        logger.warn('WebSocket initialization failed (non-blocking)', { error });
-      }
-    } else {
-      // Development mode: skip network tests, use simulation
-      logger.info('Development mode: skipping Constellation network connection');
+    // FORCE PRODUCTION MODE - ALWAYS test connection and require real blockchain
+    const isProduction = process.env.FORCE_REAL_TRANSACTIONS === 'true' || process.env.NODE_ENV === 'production';
+
+    // ALWAYS test HTTP connection - MUST succeed
+    logger.info('🔗 Testing connection to Constellation Mainnet (REQUIRED)...');
+    const connected = await this.testConnection();
+
+    if (!connected) {
+      throw new Error('FAILED TO CONNECT TO CONSTELLATION MAINNET - REAL BLOCKCHAIN REQUIRED, NO DEMO MODE');
     }
-    
-    logger.info('HGTP service initialized successfully', {
+
+    // Initialize WebSocket for real-time updates (best effort - not blocking)
+    try {
+      logger.info('🔌 Initializing WebSocket connection...');
+      await this.initializeWebSocket();
+    } catch (error) {
+      logger.warn('WebSocket initialization failed (non-blocking for transactions)', { error });
+    }
+
+    logger.info('✅ HGTP Service READY FOR REAL BLOCKCHAIN TRANSACTIONS', {
       nodeUrl: this.config.nodeUrl,
       networkId: this.config.networkId,
-      mode: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+      walletAddress: this.config.walletAddress.substring(0, 10) + '...',
+      mode: 'REAL BLOCKCHAIN - PRODUCTION ONLY'
     });
   }
 
@@ -235,10 +236,10 @@ class RealHGTPService {
   }
 
   /**
-   * Anchor consent record to Hypergraph
+   * Anchor consent record to Hypergraph (REAL BLOCKCHAIN ONLY)
    */
   async anchorConsent(consentState: ConsentState): Promise<HGTPResult> {
-    logger.info('Anchoring consent to HGTP', { consentId: consentState.consentId });
+    logger.info('🔗 Anchoring consent to REAL BLOCKCHAIN', { consentId: consentState.consentId });
 
     try {
       // Prepare transaction data
@@ -254,34 +255,36 @@ class RealHGTPService {
         timestamp: Date.now()
       };
 
-      // Create and sign transaction
+      // Create and sign transaction (REQUIRES REAL KEYS)
       const transaction = await this.createSignedTransaction(transactionData);
 
-      // Submit to Constellation Mainnet (PRODUCTION MODE)
-      if (!this.isConnected) {
-        throw new Error('Not connected to Constellation Mainnet - cannot submit transaction');
-      }
-
+      // FORCE REAL BLOCKCHAIN SUBMISSION - NO SIMULATION ALLOWED
+      logger.info('📡 Submitting REAL transaction to Constellation Mainnet...');
       const result = await this.submitToConstellation(transaction);
-      logger.info('✅ Consent anchored to Constellation Mainnet DAG', { 
+
+      logger.info('✅ Consent ANCHORED TO REAL BLOCKCHAIN', {
         consentId: consentState.consentId,
         transactionHash: result.transactionHash,
-        mode: 'PRODUCTION'
+        network: 'Constellation Mainnet',
+        mode: 'REAL BLOCKCHAIN - NO DEMO'
       });
-      
+
       return result;
 
     } catch (error) {
-      logger.error('Failed to anchor consent to HGTP', { error });
-      throw error;
+      logger.error('❌ FAILED TO ANCHOR TO REAL BLOCKCHAIN', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        consentId: consentState.consentId
+      });
+      throw new Error(`REAL BLOCKCHAIN ANCHORING FAILED: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Update consent status on HGTP
+   * Update consent status on HGTP (REAL BLOCKCHAIN ONLY)
    */
   async updateConsentStatus(consentId: string, status: ConsentStatus): Promise<HGTPResult> {
-    logger.info('Updating consent status on HGTP', { consentId, status });
+    logger.info('🔄 Updating consent status on REAL BLOCKCHAIN', { consentId, status });
 
     try {
       const transactionData = {
@@ -294,24 +297,27 @@ class RealHGTPService {
 
       const transaction = await this.createSignedTransaction(transactionData);
 
-      // Submit to Constellation Mainnet (PRODUCTION MODE)
-      if (!this.isConnected) {
-        throw new Error('Not connected to Constellation Mainnet - cannot update consent status');
-      }
-
+      // FORCE REAL BLOCKCHAIN SUBMISSION - NO SIMULATION ALLOWED
+      logger.info('📡 Submitting REAL status update to Constellation Mainnet...');
       const result = await this.submitToConstellation(transaction);
-      logger.info('✅ Consent status updated on Constellation Mainnet DAG', {
+
+      logger.info('✅ Consent status UPDATED ON REAL BLOCKCHAIN', {
         consentId,
         status,
         transactionHash: result.transactionHash,
-        mode: 'PRODUCTION'
+        network: 'Constellation Mainnet',
+        mode: 'REAL BLOCKCHAIN - NO DEMO'
       });
-      
+
       return result;
 
     } catch (error) {
-      logger.error('Failed to update consent status on HGTP', { error });
-      throw error;
+      logger.error('❌ FAILED TO UPDATE STATUS ON REAL BLOCKCHAIN', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        consentId,
+        status
+      });
+      throw new Error(`REAL BLOCKCHAIN STATUS UPDATE FAILED: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

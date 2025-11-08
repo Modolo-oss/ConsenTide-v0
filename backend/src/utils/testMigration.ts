@@ -3,10 +3,10 @@
  * Manually test database migration and demo account creation
  */
 
-import { migrateDatabase } from './utils/migrateDatabase';
-import { createDemoAccounts } from './utils/demoSetup';
-import { databaseService } from './services/databaseService';
-import { logger } from './utils/logger';
+import { migrateDatabase } from '../utils/migrateDatabase';
+import { createDemoAccounts } from '../utils/demoSetup';
+import { databaseService } from '../services/databaseService';
+import { logger } from '../utils/logger';
 
 async function testMigration() {
   try {
@@ -49,7 +49,7 @@ async function testMigration() {
     // Verify demo accounts
     logger.info('🔍 Verifying demo accounts...');
     const accountsResult = await databaseService.query('SELECT email, role FROM auth_credentials');
-    logger.info(`📊 Found ${accountsResult.rows.length} accounts:`, accountsResult.rows.map(r => `${r.email} (${r.role})`));
+    logger.info(`📊 Found ${accountsResult.rows.length} accounts:`, accountsResult.rows.map((r: any) => `${r.email} (${r.role})`));
 
     logger.info('🎉 Migration test completed successfully!');
 
