@@ -2,10 +2,41 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 
-// In-memory user store for temporary simplified auth
+// In-memory user store for temporary simplified auth - matching frontend demo accounts
 const TEMP_USERS = [
   {
     id: 'user_demo',
+    email: 'user@consentire.io',
+    password: 'password123',
+    role: 'user',
+    did: 'did:consentire:user',
+    organizationId: null,
+    publicKey: '04user',
+    walletAddress: null,
+  },
+  {
+    id: 'user_controller',
+    email: 'org@consentire.io',
+    password: 'password123',
+    role: 'controller',
+    did: 'did:consentire:org',
+    organizationId: null,
+    publicKey: '04org',
+    walletAddress: null,
+  },
+  {
+    id: 'user_regulator',
+    email: 'regulator@consentire.io',
+    password: 'password123',
+    role: 'regulator',
+    did: 'did:consentire:regulator',
+    organizationId: null,
+    publicKey: '04regulator',
+    walletAddress: null,
+  },
+  // Keep original demo accounts for backward compatibility
+  {
+    id: 'user_demo_old',
     email: 'demo@consentire.com',
     password: 'demo123',
     role: 'user',
@@ -15,7 +46,7 @@ const TEMP_USERS = [
     walletAddress: null,
   },
   {
-    id: 'user_admin',
+    id: 'user_admin_old',
     email: 'admin@consentire.com',
     password: 'admin123',
     role: 'admin',
@@ -25,7 +56,7 @@ const TEMP_USERS = [
     walletAddress: null,
   },
   {
-    id: 'user_controller',
+    id: 'user_controller_old',
     email: 'controller@consentire.com',
     password: 'controller123',
     role: 'controller',
