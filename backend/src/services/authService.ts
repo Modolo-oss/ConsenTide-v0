@@ -103,7 +103,7 @@ export class AuthService {
           email: user.email,
           role: user.role,
           did: user.did,
-          organizationId: user.organizationId,
+          organizationId: user.organizationId || undefined,
         },
       };
     } catch (error) {
