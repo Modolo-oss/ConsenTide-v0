@@ -8,7 +8,7 @@ import {
   ControllerRegistrationResponse,
   APIError
 } from '@consentire/shared';
-import { authenticateUser, requireAdmin } from '../middleware/supabaseAuth';
+import { authenticateUser, requireRole } from '../middleware/auth';
 import { pgControllerService } from '../services/pgControllerService';
 import { logger } from '../utils/logger';
 
@@ -20,7 +20,7 @@ export const controllerRouter = Router();
  * POST /api/v1/controllers/register
  * Register a new data controller (organization)
  */
-controllerRouter.post('/register', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
+controllerRouter.post('/register', authenticateUser, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const request: ControllerRegistrationRequest = req.body;
     

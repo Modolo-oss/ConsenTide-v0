@@ -5,6 +5,7 @@ import {
   APIError
 } from '@consentire/shared';
 import { logger } from '../utils/logger';
+import { authenticateUser, requireOwnership } from '../middleware/auth';
 
 // TEMPORARY: In-memory user store (same as authService)
 const TEMP_USERS = [
@@ -132,14 +133,14 @@ userRouter.post('/register', async (req: Request, res: Response) => {
  * GET /api/v1/users/me/profile
  * Get current authenticated user's profile
  */
-userRouter.get('/me/profile', async (req: Request, res: Response) => {
+userRouter.get('/me/profile', authenticateUser, async (req: Request, res: Response) => {
   try {
     // TEMPORARY: Return basic profile for demo
     const profile = {
-      userId: 'user_demo',
-      email: 'demo@consentire.com',
-      role: 'user',
-      did: 'did:consentire:demo'
+      userId: req.user!.id,
+      email: req.user!.email,
+      role: req.user!.role,
+      did: req.user!.did
     };
     
     res.status(200).json({
@@ -161,16 +162,16 @@ userRouter.get('/me/profile', async (req: Request, res: Response) => {
  * GET /api/v1/users/:userId
  * Get user information
  */
-userRouter.get('/:userId', async (req: Request, res: Response) => {
+userRouter.get('/:userId', authenticateUser, requireOwnership('userId'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     
     // TEMPORARY: Return basic user info for demo
     const user = {
       userId,
-      email: 'demo@consentire.com',
-      role: 'user',
-      did: `did:consentire:${userId}`
+      email: req.user!.email,
+      role: req.user!.role,
+      did: req.user!.did
     };
     
     res.status(200).json({

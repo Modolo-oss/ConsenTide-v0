@@ -10,7 +10,7 @@ import {
   APIError
 } from '@consentire/shared';
 import { pgConsentService } from '../services/pgConsentService';
-import { authenticateUser, optionalAuth } from '../middleware/supabaseAuth';
+import { authenticateUser } from '../middleware/auth';
 import { logger } from '../utils/logger';
 
 export const consentRouter = Router();

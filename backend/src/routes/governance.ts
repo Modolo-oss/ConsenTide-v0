@@ -11,7 +11,7 @@ import {
   APIError
 } from '@consentire/shared';
 import { logger } from '../utils/logger';
-import { authenticateUser } from '../middleware/supabaseAuth';
+import { authenticateUser } from '../middleware/auth';
 import { pgGovernanceService } from '../services/pgGovernanceService';
 
 export const governanceRouter = Router();

@@ -3,7 +3,7 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { authenticateUser } from '../middleware/supabaseAuth';
+import { authenticateUser } from '../middleware/auth';
 import { databaseService } from '../services/databaseService';
 import { logger } from '../utils/logger';
 import { APIError } from '@consentire/shared';

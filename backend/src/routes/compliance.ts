@@ -6,7 +6,7 @@ import { Router, Request, Response } from 'express';
 import { ComplianceStatus, APIError } from '@consentire/shared';
 import { logger } from '../utils/logger';
 import { pgConsentService } from '../services/pgConsentService';
-import { authenticateUser, requireAdmin } from '../middleware/supabaseAuth';
+import { authenticateUser, requireRole } from '../middleware/auth';
 import { databaseService } from '../services/databaseService';
 
 export const complianceRouter = Router();
@@ -102,7 +102,7 @@ complianceRouter.get('/status/:controllerHash', authenticateUser, async (req: Re
  * GET /api/v1/compliance/report/:controllerHash
  * Generate detailed compliance report (admin only)
  */
-complianceRouter.get('/report/:controllerHash', authenticateUser, requireAdmin, async (req: Request, res: Response) => {
+complianceRouter.get('/report/:controllerHash', authenticateUser, requireRole(['admin']), async (req: Request, res: Response) => {
   try {
     const { controllerHash } = req.params;
     const report = await pgConsentService.getComplianceReport(controllerHash);
