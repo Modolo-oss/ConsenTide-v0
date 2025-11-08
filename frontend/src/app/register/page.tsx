@@ -74,6 +74,7 @@ export default function RegisterPage() {
       const response = await api.post('/users/register', {
         email: formData.email,
         publicKey: randomPublicKey,
+        password: formData.password,
         metadata: {
           registeredAt: new Date().toISOString()
         }

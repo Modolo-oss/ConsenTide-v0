@@ -3,44 +3,102 @@
  */
 
 import { Router, Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import {
   UserRegistrationRequest,
   UserRegistrationResponse,
   APIError
 } from '@consentire/shared';
-import { generateUserId, generateDID, hash } from '../utils/crypto';
-import { authenticateUser, requireOwnership } from '../middleware/supabaseAuth';
+import { databaseService } from '../services/databaseService';
 import { logger } from '../utils/logger';
 
 export const userRouter = Router();
-
-// Production: use Supabase user profiles
 
 /**
  * POST /api/v1/users/register
  * Register a new user
  */
-userRouter.post('/register', authenticateUser, async (req: Request, res: Response) => {
+userRouter.post('/register', async (req: Request, res: Response) => {
   try {
-    const request: UserRegistrationRequest = req.body;
-    if (!request.publicKey) {
+    const { email, publicKey, password, metadata }: UserRegistrationRequest = req.body;
+
+    // Validate required fields
+    if (!email || !publicKey || !password) {
       return res.status(400).json({
         code: 'VALIDATION_ERROR',
-        message: 'Missing required field: publicKey',
+        message: 'Missing required fields: email, publicKey, and password are required',
         timestamp: Date.now()
       } as APIError);
     }
 
-    // TODO: Implement user profile creation using PostgreSQL pool
-    // This endpoint needs to be updated to use a PostgreSQL-based user service
-    
-    res.status(501).json({
-      code: 'NOT_IMPLEMENTED',
-      message: 'User profile creation needs PostgreSQL implementation',
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid email format',
+        timestamp: Date.now()
+      } as APIError);
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        code: 'VALIDATION_ERROR',
+        message: 'Password must be at least 8 characters long',
+        timestamp: Date.now()
+      } as APIError);
+    }
+
+    // Generate user identifiers
+    const userId = `user_${crypto.createHash('sha256').update(email.toLowerCase()).digest('hex').substring(0, 32)}`;
+    const emailHash = crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').substring(0, 64);
+    const did = `did:consentire:${crypto.createHash('sha256').update(publicKey).digest('hex').substring(0, 32)}`;
+
+    // Check if user already exists
+    const existingUser = await databaseService.query(
+      'SELECT id FROM users WHERE email_hash = $1',
+      [emailHash]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({
+        code: 'USER_EXISTS',
+        message: 'User with this email already exists',
+        timestamp: Date.now()
+      } as APIError);
+    }
+
+    // Insert user into users table
+    await databaseService.query(`
+      INSERT INTO users (id, email_hash, public_key, did, created_at)
+      VALUES ($1, $2, $3, $4, NOW())
+    `, [userId, emailHash, publicKey, did]);
+
+    // Hash the password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Insert auth credentials
+    await databaseService.query(`
+      INSERT INTO auth_credentials (user_id, email, password_hash, role, user_type, created_at)
+      VALUES ($1, $2, $3, 'user', 'individual', NOW())
+    `, [userId, email, passwordHash]);
+
+    logger.info(`User registered successfully: ${email} (ID: ${userId})`);
+
+    const response: UserRegistrationResponse = {
+      success: true,
+      userId,
+      did,
+      message: 'User registered successfully. You can now login with your credentials.',
       timestamp: Date.now()
-    } as APIError);
+    };
+
+    res.status(201).json(response);
+
   } catch (error: any) {
-    logger.error('Error registering user', { error: error.message });
+    logger.error('Error registering user', { error: error.message, stack: error.stack });
     res.status(500).json({
       code: 'INTERNAL_ERROR',
       message: error.message || 'Failed to register user',

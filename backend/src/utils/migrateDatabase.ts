@@ -14,7 +14,7 @@ export async function migrateDatabase(): Promise<void> {
 
     logger.info('📋 Creating database schema...');
 
-    // Read schema file (relative to backend directory in Railway)
+    // Read schema file (from project root database folder)
     const schemaPath = process.cwd() + '/../database/schema.sql';
     const schemaSQL = readFileSync(schemaPath, 'utf8');
 
