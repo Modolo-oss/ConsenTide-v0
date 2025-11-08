@@ -146,14 +146,14 @@ app.use((req: Request, res: Response) => {
 // Error handler
 app.use(errorHandler);
 
-// Initialize database schema and demo accounts (for hackathon evaluation)
-migrateDatabase().then(() => {
-  createDemoAccounts().catch(error => {
-    logger.error('Failed to create demo accounts:', error);
-  });
-}).catch(error => {
-  logger.error('Failed to migrate database:', error);
-});
+// TEMPORARY: Skip database migration and seeding for simplified auth
+// migrateDatabase().then(() => {
+//   createDemoAccounts().catch(error => {
+//     logger.error('Failed to create demo accounts:', error);
+//   });
+// }).catch(error => {
+//   logger.error('Failed to migrate database:', error);
+// });
 
 // Start server
 app.listen(PORT, () => {

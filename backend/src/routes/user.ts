@@ -1,17 +1,44 @@
-/**
- * User API routes
- */
-
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import {
   UserRegistrationRequest,
   UserRegistrationResponse,
   APIError
 } from '@consentire/shared';
-import { databaseService } from '../services/databaseService';
 import { logger } from '../utils/logger';
+
+// TEMPORARY: In-memory user store (same as authService)
+const TEMP_USERS = [
+  {
+    id: 'user_demo',
+    email: 'demo@consentire.com',
+    password: 'demo123',
+    role: 'user',
+    did: 'did:consentire:demo',
+    organizationId: null,
+    publicKey: '04demo',
+    walletAddress: null,
+  },
+  {
+    id: 'user_admin',
+    email: 'admin@consentire.com',
+    password: 'admin123',
+    role: 'admin',
+    did: 'did:consentire:admin',
+    organizationId: null,
+    publicKey: '04admin',
+    walletAddress: null,
+  },
+  {
+    id: 'user_controller',
+    email: 'controller@consentire.com',
+    password: 'controller123',
+    role: 'controller',
+    did: 'did:consentire:controller',
+    organizationId: null,
+    publicKey: '04controller',
+    walletAddress: null,
+  },
+];
 
 export const userRouter = Router();
 
@@ -21,7 +48,7 @@ export const userRouter = Router();
  */
 userRouter.post('/register', async (req: Request, res: Response) => {
   try {
-    const { email, publicKey, password, metadata }: UserRegistrationRequest = req.body;
+    const { email, publicKey, password, metadata }: any = req.body;
 
     // Validate required fields
     if (!email || !publicKey || !password) {
@@ -29,7 +56,7 @@ userRouter.post('/register', async (req: Request, res: Response) => {
         code: 'VALIDATION_ERROR',
         message: 'Missing required fields: email, publicKey, and password are required',
         timestamp: Date.now()
-      } as APIError);
+      });
     }
 
     // Validate email format
@@ -51,18 +78,9 @@ userRouter.post('/register', async (req: Request, res: Response) => {
       } as APIError);
     }
 
-    // Generate user identifiers
-    const userId = `user_${crypto.createHash('sha256').update(email.toLowerCase()).digest('hex').substring(0, 32)}`;
-    const emailHash = crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').substring(0, 64);
-    const did = `did:consentire:${crypto.createHash('sha256').update(publicKey).digest('hex').substring(0, 32)}`;
-
-    // Check if user already exists
-    const existingUser = await databaseService.query(
-      'SELECT id FROM users WHERE email_hash = $1',
-      [emailHash]
-    );
-
-    if (existingUser.rows.length > 0) {
+    // Check if user already exists in temp store
+    const existingUser = TEMP_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
+    if (existingUser) {
       return res.status(409).json({
         code: 'USER_EXISTS',
         message: 'User with this email already exists',
@@ -70,20 +88,24 @@ userRouter.post('/register', async (req: Request, res: Response) => {
       } as APIError);
     }
 
-    // Insert user into users table
-    await databaseService.query(`
-      INSERT INTO users (id, email_hash, public_key, did, created_at)
-      VALUES ($1, $2, $3, $4, NOW())
-    `, [userId, emailHash, publicKey, did]);
+    // Generate user ID and DID
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const did = `did:consentire:${userId}`;
 
-    // Hash the password
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Create new user in memory
+    const newUser = {
+      id: userId,
+      email: email.toLowerCase(),
+      password: password, // Plain text for temp auth
+      role: 'user',
+      did: did,
+      organizationId: null,
+      publicKey: publicKey,
+      walletAddress: null,
+    };
 
-    // Insert auth credentials
-    await databaseService.query(`
-      INSERT INTO auth_credentials (user_id, email, password_hash, role, user_type, created_at)
-      VALUES ($1, $2, $3, 'user', 'individual', NOW())
-    `, [userId, email, passwordHash]);
+    // Add to temp users store
+    TEMP_USERS.push(newUser);
 
     logger.info(`User registered successfully: ${email} (ID: ${userId})`);
 

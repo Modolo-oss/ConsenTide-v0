@@ -1,11 +1,40 @@
-import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { logger } from '../utils/logger';
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+// In-memory user store for temporary simplified auth
+const TEMP_USERS = [
+  {
+    id: 'user_demo',
+    email: 'demo@consentire.com',
+    password: 'demo123',
+    role: 'user',
+    did: 'did:consentire:demo',
+    organizationId: null,
+    publicKey: '04demo',
+    walletAddress: null,
+  },
+  {
+    id: 'user_admin',
+    email: 'admin@consentire.com',
+    password: 'admin123',
+    role: 'admin',
+    did: 'did:consentire:admin',
+    organizationId: null,
+    publicKey: '04admin',
+    walletAddress: null,
+  },
+  {
+    id: 'user_controller',
+    email: 'controller@consentire.com',
+    password: 'controller123',
+    role: 'controller',
+    did: 'did:consentire:controller',
+    organizationId: null,
+    publicKey: '04controller',
+    walletAddress: null,
+  },
+];
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'default-secret-change-in-production';
 const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '24h';
@@ -33,22 +62,10 @@ export class AuthService {
     try {
       const { email, password } = loginData;
 
-      const result = await pool.query(
-        `SELECT 
-          ac.user_id, 
-          ac.email, 
-          ac.password_hash, 
-          ac.role,
-          ac.organization_id,
-          u.did,
-          u.public_key
-         FROM auth_credentials ac
-         JOIN users u ON ac.user_id = u.id
-         WHERE ac.email = $1`,
-        [email]
-      );
+      // Find user in temp store
+      const user = TEMP_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-      if (result.rows.length === 0) {
+      if (!user) {
         logger.warn(`Login attempt failed: user not found - ${email}`);
         return {
           success: false,
@@ -56,10 +73,8 @@ export class AuthService {
         };
       }
 
-      const user = result.rows[0];
-      const passwordMatch = await bcrypt.compare(password, user.password_hash);
-
-      if (!passwordMatch) {
+      // Simple password check (no bcrypt for temp users)
+      if (password !== user.password) {
         logger.warn(`Login attempt failed: invalid password - ${email}`);
         return {
           success: false,
@@ -68,12 +83,13 @@ export class AuthService {
       }
 
       const payload = {
-        userId: user.user_id,
+        userId: user.id,
         email: user.email,
         role: user.role,
         did: user.did,
-        organizationId: user.organization_id,
+        organizationId: user.organizationId,
       };
+
       // @ts-ignore - JWT_EXPIRES_IN is a valid string format for expiresIn
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
@@ -83,11 +99,11 @@ export class AuthService {
         success: true,
         token,
         user: {
-          id: user.user_id,
+          id: user.id,
           email: user.email,
           role: user.role,
           did: user.did,
-          organizationId: user.organization_id,
+          organizationId: user.organizationId,
         },
       };
     } catch (error) {
@@ -111,27 +127,24 @@ export class AuthService {
 
   async getUserById(userId: string): Promise<any> {
     try {
-      const result = await pool.query(
-        `SELECT 
-          u.id,
-          ac.email,
-          ac.role,
-          ac.organization_id,
-          u.did,
-          u.public_key,
-          u.wallet_address,
-          u.created_at
-         FROM users u
-         JOIN auth_credentials ac ON u.id = ac.user_id
-         WHERE u.id = $1`,
-        [userId]
-      );
+      // Find user in temp store
+      const user = TEMP_USERS.find(u => u.id === userId);
 
-      if (result.rows.length === 0) {
+      if (!user) {
         return null;
       }
 
-      return result.rows[0];
+      // Return user data in same format as database
+      return {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        organization_id: user.organizationId,
+        did: user.did,
+        public_key: user.publicKey,
+        wallet_address: user.walletAddress,
+        created_at: new Date().toISOString(),
+      };
     } catch (error) {
       logger.error('Error fetching user:', error);
       return null;
