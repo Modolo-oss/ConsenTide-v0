@@ -112,7 +112,7 @@ userRouter.post('/register', async (req: Request, res: Response) => {
     const response: UserRegistrationResponse = {
       userId,
       did,
-      walletAddress: null,
+      walletAddress: '',
       createdAt: Date.now()
     };
 
